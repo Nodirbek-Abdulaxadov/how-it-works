@@ -1,11 +1,224 @@
-// 6–8 qatlamlar: OS va virtual xotira → CPU konveyeri → raqamli mantiq.
+// 6–9 qatlamlar: yadro va syscall → virtual xotira → CPU konveyeri → raqamli mantiq.
 import * as THREE from 'three';
 import {
   textPlane, label, segments, curveLine, wireBox, panel,
-  orb, glowSprite, lineMat, pulse, clamp
+  orb, glowSprite, lineMat, pulse, clamp, lerp
 } from '../lib/gfx.js';
 
-// ── 06. Jarayon va virtual xotira ───────────────────────────────────────────
+// ── 06. Yadro: syscall va imtiyoz chegarasi ─────────────────────────────────
+export function buildKernel(meta) {
+  const g = new THREE.Group();
+
+  const BOUND = 0.9;          // ring 3 / ring 0 chegarasi
+  const CX = -5;              // chaqiruvlar zanjirining markazi
+
+  // ---- Chegara: uzuq-uzuq chiziq va yorug'lik bandi ----
+  const dashes = [];
+  for (let x = -14; x < 14; x += 1.12) {
+    dashes.push(new THREE.Vector3(x, BOUND, 0), new THREE.Vector3(x + 0.62, BOUND, 0));
+  }
+  g.add(segments(dashes, meta.color, 0.8));
+
+  const band = new THREE.Mesh(
+    new THREE.PlaneGeometry(28, 1.3),
+    new THREE.MeshBasicMaterial({
+      color: meta.color, transparent: true, opacity: 0.07,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    })
+  );
+  band.position.set(0, BOUND, -0.6);
+  g.add(band);
+
+  const modeTag = (rows, y) => {
+    const m = textPlane(rows, { size: 24, height: 1.5, align: 'center' });
+    m.position.set(-11.4, y, 0);
+    g.add(m);
+    return m;
+  };
+  modeTag([
+    [{ text: 'foydalanuvchi rejimi', color: '#e2e8f0', weight: '600' }],
+    [{ text: 'ring 3 — imtiyozsiz', color: '#7c8aa5' }]
+  ], 3.2);
+  modeTag([
+    [{ text: 'yadro rejimi', color: '#fecdd3', weight: '600' }],
+    [{ text: 'ring 0 — to\'liq imtiyoz', color: '#7c8aa5' }]
+  ], -1.4);
+
+  // ---- Chaqiruvlar zanjiri: C# dan tty drayverigacha ----
+  const steps = [
+    ['Console.WriteLine("Salom")', 'sizning kodingiz', 8.7, '#a5f3fc'],
+    ['Stream.Write(bytes)', '.NET runtime', 6.8, '#7dd3fc'],
+    ['write(1, buf, 6)', 'syscall o\'ramasi', 4.9, '#93c5fd'],
+    ['mov eax, 1 ; syscall', 'protsessor komandasi', 3.0, '#fbbf24'],
+    ['MSR_LSTAR → entry_SYSCALL_64', 'yadro kirish nuqtasi', -1.3, '#fda4af'],
+    ['sys_write(fd = 1, …)', 'yadro funksiyasi', -3.2, '#fda4af'],
+    ['VFS → tty drayveri', 'qurilma darajasi', -5.1, '#fda4af']
+  ];
+
+  const cards = steps.map(([code, desc, y, col]) => {
+    const card = textPlane(
+      [
+        [{ text: code, color: col, weight: '600' }],
+        [{ text: desc, color: '#64748b' }]
+      ],
+      { size: 25, height: 1.45, bg: 'rgba(9,14,28,0.9)', border: 'rgba(148,163,184,0.18)', padX: 20, padY: 12 }
+    );
+    card.position.set(CX, y, 0.2);
+    g.add(card);
+    return card;
+  });
+
+  // Kartalar orasidagi ulanishlar
+  const links = [];
+  for (let i = 0; i < steps.length - 1; i++) {
+    const a = steps[i][2] - 0.75;
+    const b = steps[i + 1][2] + 0.75;
+    links.push(new THREE.Vector3(CX, a, 0), new THREE.Vector3(CX, b, 0));
+  }
+  g.add(segments(links, '#475569', 0.5));
+
+  // ---- Chegarani kesib o'tish: "trap" chaqnashi ----
+  const flash = glowSprite(meta.color, 7);
+  flash.position.set(CX, BOUND, 0.6);
+  flash.material.opacity = 0;
+  g.add(flash);
+
+  const trapTag = label('trap — protsessor imtiyoz darajasini almashtiradi', { size: 21, color: '#fda4af' });
+  trapTag.position.set(CX + 0.6, BOUND + 0.85, 0.7);
+  g.add(trapTag);
+
+  // Zanjir bo'ylab yuguruvchi so'rov
+  const packet = glowSprite('#ffffff', 0.85);
+  g.add(packet);
+
+  // ---- Qaytish yo'li: sysret ----
+  const back = curveLine([
+    new THREE.Vector3(CX + 5.2, -1.3, 0),
+    new THREE.Vector3(CX + 6.6, BOUND, 0.4),
+    new THREE.Vector3(CX + 5.2, 3.0, 0)
+  ], '#86efac', 0.4);
+  g.add(back);
+  const backDot = glowSprite('#bbf7d0', 0.6);
+  g.add(backDot);
+  const backTag = label('sysret', { size: 21, color: '#86efac' });
+  backTag.position.set(CX + 7.4, BOUND + 0.75, 0.5);
+  g.add(backTag);
+
+  // ---- Natija: terminal ----
+  const term = panel(8.6, 2.9, 0.6, '#86efac', { fill: 0.05, edgeOpacity: 0.32 });
+  term.position.set(CX, -8, 0);
+  g.add(term);
+  const termLeft = CX - 4.3 + 0.75;
+
+  const leftText = (rows, opts, y) => {
+    const m = textPlane(rows, opts);
+    m.position.set(termLeft + m.userData.size[0] / 2, y, 0.4);
+    g.add(m);
+    return m;
+  };
+  leftText([[{ text: '$ dotnet run', color: '#64748b' }]], { size: 25, height: 0.72 }, -7.2);
+  const outLine = leftText([[{ text: 'Salom', color: '#86efac', weight: '600' }]], { size: 27, height: 0.86 }, -8.6);
+  const caret = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.34, 0.86),
+    new THREE.MeshBasicMaterial({ color: 0x86efac, transparent: true, opacity: 0.8, depthWrite: false })
+  );
+  caret.position.set(termLeft + 0.25, -8.6, 0.4);
+  g.add(caret);
+
+  // ---- Yadroga uchta eshik ----
+  const doorsTag = label('yadroga faqat uchta eshik bor', { size: 24, color: '#cbd5e1' });
+  doorsTag.position.set(8.6, 5.6, 0);
+  g.add(doorsTag);
+
+  const doors = [
+    ['syscall', 'dastur o\'zi so\'raydi', '#fbbf24'],
+    ['interrupt', 'apparat chaqiradi', '#38bdf8'],
+    ['exception', 'xato yuz beradi', '#f87171']
+  ];
+  const doorObjs = doors.map(([name, desc, col], i) => {
+    const x = 4.9 + i * 3.7;
+    const gate = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.3, 3.4),
+      new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.12, depthWrite: false })
+    );
+    gate.position.set(x, BOUND, -0.2);
+    g.add(gate);
+    const edge = wireBox(2.3, 3.4, 0.001, col, 0.6);
+    edge.position.copy(gate.position);
+    g.add(edge);
+
+    const nm = label(name, { size: 22, color: col, weight: '600' });
+    nm.position.set(x, BOUND + 2.4, 0.3);
+    g.add(nm);
+    const ds = label(desc, { size: 18, color: '#64748b' });
+    ds.position.set(x, BOUND - 2.4, 0.3);
+    g.add(ds);
+
+    const spark = glowSprite(col, 0.7);
+    g.add(spark);
+    return { gate, spark, x };
+  });
+
+  const note = textPlane(
+    [[{ text: 'Yadro alohida dastur emas — bu o\'sha protsessorda, yuqori imtiyoz bilan bajariladigan kod.', color: '#94a3b8' }]],
+    { size: 25, height: 0.8, align: 'center' }
+  );
+  note.position.set(0, -10.7, 0);
+  g.add(note);
+
+  // Zanjir bo'ylab harakat uchun tugun koordinatalari
+  const chainY = steps.map((s) => s[2]);
+
+  return {
+    group: g,
+    update(t) {
+      const cycle = (t * 0.22) % 1;              // to'liq syscall aylanishi
+      const down = clamp(cycle / 0.55, 0, 1);     // pastga — so'rov
+      const up = clamp((cycle - 0.7) / 0.25, 0, 1); // yuqoriga — qaytish
+
+      // So'rov zanjir bo'ylab tushadi
+      const seg = down * (chainY.length - 1);
+      const si = Math.min(Math.floor(seg), chainY.length - 2);
+      const sf = seg - si;
+      packet.position.set(CX, lerp(chainY[si], chainY[si + 1], sf), 0.8);
+      packet.material.opacity = cycle < 0.6 ? 0.95 : 0;
+
+      cards.forEach((c, i) => {
+        const active = i === Math.round(seg) && cycle < 0.6;
+        c.material.opacity = active ? 1 : 0.5;
+        c.position.z = active ? 0.5 : 0.2;
+      });
+
+      // Chegarani kesib o'tgan payt chaqnaydi
+      const atBoundary = packet.position.y < BOUND + 1.4 && packet.position.y > BOUND - 1.4 && cycle < 0.6;
+      flash.material.opacity = atBoundary ? 0.55 + 0.35 * pulse(t, 14) : Math.max(0, flash.material.opacity - 0.04);
+      trapTag.material.opacity = atBoundary ? 1 : 0.25;
+
+      // Natija terminalda paydo bo'ladi
+      const printed = cycle > 0.62;
+      outLine.material.opacity = printed ? 1 : 0.06;
+      caret.material.opacity = printed ? 0 : 0.35 + 0.45 * pulse(t, 6);
+
+      // sysret bilan qaytish
+      backDot.visible = up > 0 && up < 1;
+      if (backDot.visible) {
+        back.userData.curve.getPoint(up, backDot.position);
+        backDot.material.opacity = Math.sin(up * Math.PI) * 0.95;
+      }
+      back.material.opacity = up > 0 && up < 1 ? 0.75 : 0.25;
+
+      // Eshiklar navbat bilan "ochiladi"
+      doorObjs.forEach(({ gate, spark, x }, i) => {
+        const k = (t * 0.35 + i * 0.33) % 1;
+        gate.material.opacity = 0.08 + 0.16 * Math.sin(k * Math.PI);
+        spark.position.set(x, BOUND + 1.7 - k * 3.4, 0.4);
+        spark.material.opacity = Math.sin(k * Math.PI) * 0.85;
+      });
+    }
+  };
+}
+
+// ── 07. Jarayon va virtual xotira ───────────────────────────────────────────
 export function buildOs(meta) {
   const g = new THREE.Group();
 
@@ -127,7 +340,7 @@ export function buildOs(meta) {
   };
 }
 
-// ── 07. CPU konveyeri va kesh ───────────────────────────────────────────────
+// ── 08. CPU konveyeri va kesh ───────────────────────────────────────────────
 export function buildCpu(meta) {
   const g = new THREE.Group();
 
@@ -271,7 +484,7 @@ export function buildCpu(meta) {
   };
 }
 
-// ── 08. Raqamli mantiq ──────────────────────────────────────────────────────
+// ── 09. Raqamli mantiq ──────────────────────────────────────────────────────
 export function buildLogic(meta) {
   const g = new THREE.Group();
 

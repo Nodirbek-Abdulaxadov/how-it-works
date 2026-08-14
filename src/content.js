@@ -11,7 +11,7 @@ export const LEVELS = [
     body: [
       'Siz yozgan <b>Program.cs</b> — oddiy matn fayl. Diskda u UTF-8 kodlashda baytlar sifatida yotadi: <code>C</code> harfi = 0x43 = <code>01000011</code>.',
       'Protsessor "o\'zgaruvchi", "metod" yoki "sinf" degan tushunchani bilmaydi. Bu tushunchalar faqat <b>odam uchun</b> — ular pastga tushgan sari yo\'qolib boradi.',
-      'Quyidagi 10 qatlam — o\'sha yo\'qolish jarayoni. Har bir qadamda abstraksiya yechiladi va oxirida faqat elektronlar va kvant qonunlari qoladi.'
+      'Quyidagi 11 qatlam — o\'sha yo\'qolish jarayoni. Har bir qadamda abstraksiya yechiladi va oxirida faqat elektronlar va kvant qonunlari qoladi.'
     ],
     facts: [
       ['Format', 'UTF-8 matn'],
@@ -96,9 +96,29 @@ export const LEVELS = [
     color: 0xfbbf24, color2: 0xf97316
   },
   {
+    id: 'kernel',
+    scale: 'Imtiyoz chegarasi — ring 3 / ring 0',
+    kicker: '06 — YADRO',
+    title: 'Syscall: yadroga o\'tish',
+    lead: 'Sizning kodingiz ekranga hech narsa yoza olmaydi. U buni yadrodan so\'rashi kerak.',
+    body: [
+      'Protsessorda <b>imtiyoz darajalari</b> bor. Dasturingiz <b>ring 3</b> da ishlaydi: u apparatga to\'g\'ridan-to\'g\'ri murojaat qilolmaydi, boshqa jarayonning xotirasini ko\'rolmaydi, diskka o\'zi yozolmaydi.',
+      '<code>Console.WriteLine</code> pastga tushib <code>write(1, buf, 6)</code> ga aylanadi va <code>syscall</code> komandasi bajariladi. Bu — <b>ataylab qilingan uzilish</b>: protsessor <b>ring 0</b> ga o\'tadi va oldindan belgilangan bitta manzilga sakraydi.',
+      'Muhimi: dastur yadro kodining <i>xohlagan joyiga</i> sakrolmaydi. Kirish nuqtasini yadro o\'zi qo\'ygan (x86-64 da <code>MSR_LSTAR</code> registri) — chegarani xavfsiz qiladigan narsa shu.',
+      'Yadroda <code>sys_write</code> ishga tushadi, VFS fayl deskriptori 1 ni topadi, tty drayveri belgilarni terminal buferiga qo\'yadi. So\'ng <code>sysret</code> bilan ring 3 ga qaytiladi — va sizning metodingiz keyingi qatordan davom etadi.',
+      '<b>Yadro alohida dastur emas.</b> Bu o\'sha protsessorda, lekin yuqori imtiyoz bilan bajariladigan kod. Unga faqat uchta eshik orqali kiriladi: <b>syscall</b> (dastur so\'raydi), <b>interrupt</b> (apparat chaqiradi), <b>exception</b> (xato yuz beradi).'
+    ],
+    facts: [
+      ['Chegara', 'ring 3 → ring 0'],
+      ['Komandalar', 'syscall / sysret'],
+      ['Eshiklar', 'syscall · interrupt · exception']
+    ],
+    color: 0xfb7185, color2: 0xfbbf24
+  },
+  {
     id: 'os',
-    scale: 'Operatsion tizim — yadro va MMU',
-    kicker: '06 — TIZIM',
+    scale: 'Operatsion tizim — jarayon va MMU',
+    kicker: '07 — TIZIM',
     title: 'Jarayon va virtual xotira',
     lead: 'Sizning dasturingiz haqiqiy xotirani ko\'rmaydi. U OS to\'qigan illyuziyada yashaydi.',
     body: [
@@ -117,7 +137,7 @@ export const LEVELS = [
   {
     id: 'cpu',
     scale: 'CPU yadrosi — ~10⁻³ m',
-    kicker: '07 — MIKROARXITEKTURA',
+    kicker: '08 — MIKROARXITEKTURA',
     title: 'Konveyer va kesh',
     lead: 'Protsessor komandalarni birma-bir bajarmaydi. U ularni konveyerga soladi, tartibini o\'zgartiradi va kelajakni taxmin qiladi.',
     body: [
@@ -136,7 +156,7 @@ export const LEVELS = [
   {
     id: 'logic',
     scale: 'Raqamli mantiq — ~10⁻⁵ m',
-    kicker: '08 — MANTIQ',
+    kicker: '09 — MANTIQ',
     title: 'Gate, summator va soat',
     lead: '"Qo\'shish" degan amal aslida bir nechta mantiqiy elementning ulanishidan iborat.',
     body: [
@@ -155,7 +175,7 @@ export const LEVELS = [
   {
     id: 'transistor',
     scale: 'Tranzistor — ~10⁻⁸ m (10 nm)',
-    kicker: '09 — TRANZISTOR',
+    kicker: '10 — TRANZISTOR',
     title: 'CMOS: kremniydan yasalgan kalit',
     lead: 'Har bir mantiqiy element — bir nechta tranzistor. Tranzistor esa oddiy boshqariladigan kalit.',
     body: [
@@ -174,7 +194,7 @@ export const LEVELS = [
   {
     id: 'silicon',
     scale: 'Kristall panjara — ~10⁻¹⁰ m (atomlar)',
-    kicker: '10 — MATERIAL',
+    kicker: '11 — MATERIAL',
     title: 'Kremniy, doping va PN o\'tish',
     lead: 'Kalit nima uchun ishlaydi? Chunki kremniy atomlariga boshqa atomlar qo\'shilgan.',
     body: [
@@ -193,7 +213,7 @@ export const LEVELS = [
   {
     id: 'quantum',
     scale: 'Kvant darajasi — elektron to\'lqin funksiyasi',
-    kicker: '11 — KVANT FIZIKASI',
+    kicker: '12 — KVANT FIZIKASI',
     title: 'Zona nazariyasi va tunnellashuv',
     lead: 'Eng pastki qavat. Bu yerda "zarracha" degan tushuncha yo\'qoladi va ehtimollik boshlanadi.',
     body: [

@@ -2,23 +2,31 @@
 import * as THREE from 'three';
 import { LEVELS } from './content.js';
 import { buildSource, buildAst, buildIl, buildJit, buildMachine } from './levels/software.js';
-import { buildOs, buildCpu, buildLogic } from './levels/system.js';
+import { buildKernel, buildOs, buildCpu, buildLogic } from './levels/system.js';
 import { buildTransistor, buildSilicon, buildQuantum } from './levels/hardware.js';
 import { points, segments, clamp, lerp, damp, smooth } from './lib/gfx.js';
 
 const BUILDERS = [
   buildSource, buildAst, buildIl, buildJit, buildMachine,
-  buildOs, buildCpu, buildLogic,
+  buildKernel, buildOs, buildCpu, buildLogic,
   buildTransistor, buildSilicon, buildQuantum
 ];
 
 // Har bir qatlam uchun: kamera masofasi (z), vertikal markaz (y), kontent yarim kengligi (w).
 // w tor ekranlarda qatlamni kadrga sig'dirish uchun ishlatiladi.
 const VIEW = [
-  { z: 27, y: 0.5, w: 11.5 }, { z: 31, y: 2.4, w: 10 }, { z: 32, y: 0.6, w: 13.5 },
-  { z: 33, y: -1.4, w: 15 }, { z: 31, y: 0.4, w: 14.5 },
-  { z: 37, y: -1.6, w: 15 }, { z: 35, y: -1.8, w: 16.5 }, { z: 33, y: -1.4, w: 14.5 },
-  { z: 35, y: -1.8, w: 15.5 }, { z: 35, y: -3.2, w: 14.5 }, { z: 35, y: -5, w: 16 }
+  { z: 27, y: 0.5, w: 11.5 },  // 01 manba kod
+  { z: 31, y: 2.4, w: 10 },    // 02 AST
+  { z: 32, y: 0.6, w: 13.5 },  // 03 IL
+  { z: 33, y: -1.4, w: 15 },   // 04 JIT
+  { z: 31, y: 0.4, w: 14.5 },  // 05 mashina kodi
+  { z: 33, y: -1.1, w: 14.2 }, // 06 yadro / syscall
+  { z: 37, y: -1.6, w: 15 },   // 07 virtual xotira
+  { z: 35, y: -1.8, w: 16.5 }, // 08 CPU
+  { z: 33, y: -1.4, w: 14.5 }, // 09 mantiq
+  { z: 35, y: -1.8, w: 15.5 }, // 10 tranzistor
+  { z: 35, y: -3.2, w: 14.5 }, // 11 kremniy
+  { z: 35, y: -5, w: 16 }      // 12 kvant
 ];
 
 const GAP = 72;
@@ -155,6 +163,7 @@ el.more.addEventListener('click', () => {
 });
 
 let swapTimer = null;
+let flashTimer = null;
 function setUi(i) {
   const meta = LEVELS[i];
   el.info.classList.add('swap');
@@ -172,6 +181,9 @@ function setUi(i) {
   }, 220);
 
   railItems.forEach((b, k) => b.classList.toggle('on', k === i));
+  el.rail.classList.add('flash');
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => el.rail.classList.remove('flash'), 2200);
   el.bar.style.width = `${(i / (N - 1)) * 100}%`;
   el.hint.style.opacity = i === N - 1 ? 0 : '';
 }
@@ -243,7 +255,7 @@ function frame() {
   const camY = -pos * GAP + lerp(VIEW[i0].y * fitScale[i0], VIEW[i1].y * fitScale[i1], f);
 
   // Portret rejimda pastdagi matn paneli kontentni yopmasligi uchun kadrni yuqoriga suramiz
-  const yBias = portrait ? -Math.tan((camera.fov / 2) * Math.PI / 180) * camZ * 0.19 : 0;
+  const yBias = portrait ? -Math.tan((camera.fov / 2) * Math.PI / 180) * camZ * 0.34 : 0;
   const shift = lerp(xShiftOf[i0], xShiftOf[i1], f);
 
   mouse.x = damp(mouse.x, mouse.tx, 4, dt);
@@ -279,7 +291,7 @@ uiIndex = 0;
 frame();
 
 // Salomlashuv: konsolda ham bir og'iz
-console.log('%chow-it-works', 'color:#6ee7ff;font:600 14px monospace', '— C# dan kvant fizikasigacha, 11 qatlam.');
+console.log('%chow-it-works', 'color:#6ee7ff;font:600 14px monospace', '— C# dan kvant fizikasigacha, 12 qatlam.');
 
 // Sozlash/tekshirish uchun: joriy kamera holati va qatlam masshtabi
 globalThis.__debug = (probe = []) => ({

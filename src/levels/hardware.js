@@ -1,11 +1,11 @@
-// 9–11 qatlamlar: CMOS tranzistor → kremniy kristalli va PN o'tish → kvant fizikasi.
+// 10–12 qatlamlar: CMOS tranzistor → kremniy kristalli va PN o'tish → kvant fizikasi.
 import * as THREE from 'three';
 import {
   textPlane, label, segments, curveLine, wireBox, panel,
   points, orb, glowSprite, lineMat, pulse, clamp, lerp
 } from '../lib/gfx.js';
 
-// ── 09. CMOS tranzistor ─────────────────────────────────────────────────────
+// ── 10. CMOS tranzistor ─────────────────────────────────────────────────────
 export function buildTransistor(meta) {
   const g = new THREE.Group();
 
@@ -175,7 +175,7 @@ export function buildTransistor(meta) {
   };
 }
 
-// ── 10. Kremniy kristalli, doping, PN o'tish ────────────────────────────────
+// ── 11. Kremniy kristalli, doping, PN o'tish ────────────────────────────────
 export function buildSilicon(meta) {
   const g = new THREE.Group();
 
@@ -280,7 +280,7 @@ export function buildSilicon(meta) {
   };
 }
 
-// ── 11. Kvant fizikasi ──────────────────────────────────────────────────────
+// ── 12. Kvant fizikasi ──────────────────────────────────────────────────────
 export function buildQuantum(meta) {
   const g = new THREE.Group();
 
