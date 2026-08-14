@@ -146,6 +146,11 @@ i{color:#cbd5e1}
   #scale{left:20px;top:18px;font-size:10px;max-width:60vw}
   #nav-hint{display:none}
 }
+/* Klaviatura fokusi ko'rinib tursin */
+#start:focus-visible,#more:focus-visible,.rail-item:focus-visible{
+  outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+.rail-item:focus-visible{color:var(--accent)}
+
 @media (prefers-reduced-motion:reduce){
   #nav-hint{animation:none}
   *{transition-duration:.01ms !important}

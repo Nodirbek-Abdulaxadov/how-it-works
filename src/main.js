@@ -177,8 +177,13 @@ function setUi(i) {
 }
 
 // ── Sichqoncha parallaksi ───────────────────────────────────────────────────
+// Harakatni kamaytirish so'ralgan bo'lsa, parallaks o'chadi va qatlamlar orasida
+// sho'ng'ish o'rniga tez o'tiladi. Qatlamlarning o'z animatsiyasi qoladi —
+// aynan u tushuntirmoqchi bo'lgan narsani ko'rsatadi.
+const calm = matchMedia('(prefers-reduced-motion: reduce)');
 const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
 addEventListener('pointermove', (e) => {
+  if (calm.matches) return;
   mouse.tx = (e.clientX / innerWidth - 0.5) * 2;
   mouse.ty = (e.clientY / innerHeight - 0.5) * 2;
 });
@@ -226,7 +231,7 @@ function frame() {
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.getElapsedTime();
 
-  pos = damp(pos, target, 3.0, dt);
+  pos = damp(pos, target, calm.matches ? 12 : 3.0, dt);
   if (Math.abs(pos - target) < 0.0005) pos = target;
 
   const i0 = Math.floor(clamp(pos, 0, N - 1.0001));
@@ -234,7 +239,7 @@ function frame() {
   const f = smooth(clamp(pos - i0, 0, 1));
 
   // Kamera: qatlamlar orasida "orqaga tortilib, keyin sho'ng'iydi"
-  const camZ = lerp(VIEW[i0].z, VIEW[i1].z, f) + Math.sin(f * Math.PI) * 15;
+  const camZ = lerp(VIEW[i0].z, VIEW[i1].z, f) + (calm.matches ? 0 : Math.sin(f * Math.PI) * 15);
   const camY = -pos * GAP + lerp(VIEW[i0].y * fitScale[i0], VIEW[i1].y * fitScale[i1], f);
 
   // Portret rejimda pastdagi matn paneli kontentni yopmasligi uchun kadrni yuqoriga suramiz
