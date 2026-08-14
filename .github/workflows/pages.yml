@@ -2,6 +2,10 @@ name: Deploy to GitHub Pages
 
 # Sayt statik: qurish bosqichi yo'q, repozitoriya o'zi shundayligicha yuklanadi.
 # three.js `vendor/` ichida, importmap nisbiy yo'l ishlatadi.
+#
+# BIR MARTALIK SOZLASH: Settings → Pages → Source = "GitHub Actions".
+# Busiz deploy "Resource not accessible by integration" bilan yiqiladi —
+# GITHUB_TOKEN ga Pages saytini yaratish huquqi berilmagan.
 
 on:
   push:
@@ -27,10 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # enablement: true — Pages o'chirilgan bo'lsa, workflow uni o'zi yoqadi
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:

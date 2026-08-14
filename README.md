@@ -49,6 +49,19 @@ Keyin `http://localhost:8080` ni oching.
 **Boshqaruv:** scroll · `↑` `↓` `PageUp` `PageDown` `Home` `End` · o'ngdagi
 paneldan qatlam tanlash · telefonda surish (swipe).
 
+## GitHub Pages
+
+Repozitoriyada deploy workflow bor (`.github/workflows/pages.yml`), lekin
+Pages ni birinchi marta **qo'lda yoqish kerak**: `GITHUB_TOKEN` ga sayt
+yaratish huquqi berilmagan.
+
+**Settings → Pages → Source: `GitHub Actions`** — tamom. Shundan keyin
+`main` ga har push avtomatik deploy qiladi.
+
+Muqobil yo'l: **Source: `Deploy from a branch` → `main` / `/ (root)`**.
+Bunda workflow umuman kerak emas (o'chirib tashlash mumkin), chunki sayt
+statik va qurish bosqichi yo'q.
+
 ## Bitta faylga jamlash
 
 three.js va butun kod bitta o'zi yetarli HTML faylga jamlanadi (tashqi
