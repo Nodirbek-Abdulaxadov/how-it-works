@@ -56,8 +56,17 @@ so'rovlarsiz — CSP cheklovli muhitlarda ham ishlaydi):
 
 ```bash
 node tools/build-artifact.mjs            # → dist/how-it-works.html
+node tools/build-artifact.mjs --full     # → dist/how-it-works.standalone.html
 node tools/build-artifact.mjs out.html   # boshqa nomga
 ```
+
+Ikkita rejim bor:
+
+- **odatdagi** — fragment (`<title>`, `<style>`, kontent, `<script>`); uni o'z
+  qobig'iga o'raydigan muhitlar uchun;
+- **`--full`** — to'liq HTML hujjat. Bu faylni shunchaki brauzerda ochsangiz
+  bo'ldi: server ham, internet ham, `npm install` ham kerak emas. Elektron
+  pochtaga ilova qilib yuborsa ham ishlaydi.
 
 ## Tuzilma
 

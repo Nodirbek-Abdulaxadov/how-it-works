@@ -1,5 +1,12 @@
 // Butun loyihani bitta o'zi yetarli HTML faylga jamlaydi (tashqi so'rovlarsiz).
-// Ishlatish:  node tools/build-artifact.mjs [chiqish-fayli.html]
+//
+// Ishlatish:
+//   node tools/build-artifact.mjs [chiqish-fayli.html]
+//   node tools/build-artifact.mjs --full [chiqish-fayli.html]
+//
+// Odatda fragment chiqadi (doctype/html/body'siz) — Artifact o'z qobig'ini qo'shadi.
+// `--full` bilan to'liq HTML hujjat chiqadi: uni shunchaki brauzerda ochsa bo'ladi,
+// server ham, internet ham kerak emas (file:// da ham ishlaydi).
 //
 // three.js ES-modul sifatida keladi va oxirida bitta `export{...}` bloki bor.
 // Uni olib tashlab, o'rniga `const THREE = {...}` yasaymiz — shunda bizning
@@ -10,7 +17,10 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = process.argv[2] || join(ROOT, 'dist', 'how-it-works.html');
+const argv = process.argv.slice(2);
+const FULL = argv.includes('--full');
+const OUT = argv.find((a) => !a.startsWith('--'))
+  || join(ROOT, 'dist', FULL ? 'how-it-works.standalone.html' : 'how-it-works.html');
 
 const read = (p) => readFile(join(ROOT, p), 'utf8');
 
@@ -67,7 +77,7 @@ const bodyInner = html
 
 const title = (html.match(/<title>([\s\S]*?)<\/title>/) || [, 'how it works'])[1];
 
-const out = `<title>${title}</title>
+const page = `<title>${title}</title>
 <style>
 ${css}
 </style>
@@ -78,6 +88,19 @@ ${bodyInner}
 ${bundle}
 </script>
 `;
+
+// Artifact sahifani o'zi <html>/<head>/<body> ichiga o'raydi; `--full` da esa
+// hujjatni o'zimiz yopamiz, shunda fayl brauzerda to'g'ridan-to'g'ri ochiladi.
+const out = FULL
+  ? `<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+${page}</body>
+</html>
+`.replace('</style>\n', '</style>\n</head>\n<body>\n')
+  : page;
 
 await writeFile(OUT, out, 'utf8');
 console.log(`${OUT} — ${(out.length / 1024 / 1024).toFixed(2)} MB`);
