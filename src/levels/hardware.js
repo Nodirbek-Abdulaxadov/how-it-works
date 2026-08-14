@@ -795,7 +795,7 @@ export function buildQuantum(meta) {
   g.add(cloudTag);
 
   const finale = textPlane(
-    [[{ text: 'Console.WriteLine("Salom")  ishlaydi, chunki elektronlar shunday qonunga bo\'ysunadi.', color: '#e9d5ff', weight: '600' }]],
+    [[{ text: 'Eng pastki qavat shu. Endi bitta savol qoldi: siz buni qanday ko\'rasiz?', color: '#e9d5ff', weight: '600' }]],
     { size: 27, height: 0.95, align: 'center' }
   );
   finale.position.set(0, -13.6, 0);
