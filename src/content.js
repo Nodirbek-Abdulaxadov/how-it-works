@@ -11,7 +11,7 @@ export const LEVELS = [
     body: [
       'Siz yozgan <b>Program.cs</b> — oddiy matn fayl. Diskda u UTF-8 kodlashda baytlar sifatida yotadi: <code>C</code> harfi = 0x43 = <code>01000011</code>.',
       'Protsessor "o\'zgaruvchi", "metod" yoki "sinf" degan tushunchani bilmaydi. Bu tushunchalar faqat <b>odam uchun</b> — ular pastga tushgan sari yo\'qolib boradi.',
-      'Quyidagi 11 qatlam — o\'sha yo\'qolish jarayoni. Har bir qadamda abstraksiya yechiladi va oxirida faqat elektronlar va kvant qonunlari qoladi.'
+      'Quyidagi 15 qatlam — o\'sha yo\'qolish jarayoni. Har bir qadamda abstraksiya yechiladi va oxirida faqat elektronlar va kvant qonunlari qoladi.'
     ],
     facts: [
       ['Format', 'UTF-8 matn'],
@@ -96,9 +96,29 @@ export const LEVELS = [
     color: 0xfbbf24, color2: 0xf97316
   },
   {
+    id: 'stack',
+    scale: 'Jarayon xotirasi — stek sohasi',
+    kicker: '06 — STEK',
+    title: 'Chaqiruvlar steki',
+    lead: 'Metod boshqa metodni chaqirsa, u qayerga qaytishini kim eslab qoladi?',
+    body: [
+      'Har bir chaqiruv uchun xotirada <b>kadr</b> (frame) ajratiladi: argumentlar, lokal o\'zgaruvchilar, saqlangan <code>rbp</code> va eng muhimi — <b>qaytish manzili</b>.',
+      '<code>call</code> qaytish manzilini stekka qo\'yadi va sakraydi. <code>ret</code> uni yechib olib, o\'sha manzilga qaytadi. Butun sehr shu — boshqa hech narsa yo\'q.',
+      'Stek <b>pastga o\'sadi</b>: yangi kadr kichikroq manzillarga tushadi. "Push" aslida shunchaki <code>rsp</code> ni kamaytirish. <code>rsp</code> stek cho\'qqisini, <code>rbp</code> joriy kadrni ko\'rsatib turadi.',
+      'Diqqat: bu <b>IL ning hisob steki emas</b>. U — virtual mashina abstraksiyasi edi; bu esa haqiqiy xotirada, haqiqiy manzillarda yotgan soha.',
+      'Stek cheklangan (.NET da oqim uchun odatda 1 MB). Cheksiz rekursiya uni to\'ldiradi va <b>himoya sahifasi</b>ga uriladi — natijada <code>StackOverflowException</code>, uni ushlab ham bo\'lmaydi.'
+    ],
+    facts: [
+      ['Kadrda', 'argument · lokal · qaytish manzili'],
+      ['O\'sish', 'pastga — manzil kamayadi'],
+      ['Hajm', '~1 MB (oqimga)']
+    ],
+    color: 0x93c5fd, color2: 0x7dd3fc
+  },
+  {
     id: 'kernel',
     scale: 'Imtiyoz chegarasi — ring 3 / ring 0',
-    kicker: '06 — YADRO',
+    kicker: '07 — YADRO',
     title: 'Syscall: yadroga o\'tish',
     lead: 'Sizning kodingiz ekranga hech narsa yoza olmaydi. U buni yadrodan so\'rashi kerak.',
     body: [
@@ -118,7 +138,7 @@ export const LEVELS = [
   {
     id: 'os',
     scale: 'Operatsion tizim — jarayon va MMU',
-    kicker: '07 — TIZIM',
+    kicker: '08 — TIZIM',
     title: 'Jarayon va virtual xotira',
     lead: 'Sizning dasturingiz haqiqiy xotirani ko\'rmaydi. U OS to\'qigan illyuziyada yashaydi.',
     body: [
@@ -137,7 +157,7 @@ export const LEVELS = [
   {
     id: 'cpu',
     scale: 'CPU yadrosi — ~10⁻³ m',
-    kicker: '08 — MIKROARXITEKTURA',
+    kicker: '09 — MIKROARXITEKTURA',
     title: 'Konveyer va kesh',
     lead: 'Protsessor komandalarni birma-bir bajarmaydi. U ularni konveyerga soladi, tartibini o\'zgartiradi va kelajakni taxmin qiladi.',
     body: [
@@ -156,7 +176,7 @@ export const LEVELS = [
   {
     id: 'logic',
     scale: 'Raqamli mantiq — ~10⁻⁵ m',
-    kicker: '09 — MANTIQ',
+    kicker: '10 — MANTIQ',
     title: 'Gate, summator va soat',
     lead: '"Qo\'shish" degan amal aslida bir nechta mantiqiy elementning ulanishidan iborat.',
     body: [
@@ -173,9 +193,28 @@ export const LEVELS = [
     color: 0xa78bfa, color2: 0xf472b6
   },
   {
+    id: 'gates',
+    scale: 'Gate ichi — ~10⁻⁶ m',
+    kicker: '11 — GATE ICHIDA',
+    title: 'XOR ni ochib ko\'ramiz',
+    lead: 'Oldingi qatlamdagi uchburchak — shunchaki belgi. Uning ichida nima bor?',
+    body: [
+      '<b>NAND — universal element:</b> undan AND, OR, NOT — hamma narsani qurish mumkin. Shuning uchun chiplar asosan NAND va NOR dan yig\'iladi.',
+      'Bitta <b>XOR</b> = 4 ta NAND. Bitta NAND = <b>4 ta tranzistor</b>: 2 ta PMOS parallel (yuqorida), 2 ta NMOS ketma-ket (pastda). Ya\'ni yig\'indi bitini beradigan bitta XOR ≈ <b>16 tranzistor</b>.',
+      'Bir bitli to\'liq summator ≈ <b>28 tranzistor</b>. 64-bitlisi ≈ <b>1800</b>. Butun ALU esa yuz minglab — va bu protsessorning kichkina bir burchagi xolos.',
+      'Mana shu yerda "mantiq" tugab, "fizika" boshlanadi. Keyingi qatlamda o\'sha tranzistorlardan bittasini ochamiz.'
+    ],
+    facts: [
+      ['NAND', '4 tranzistor'],
+      ['XOR', '4 NAND = 16 tranzistor'],
+      ['64-bit summator', '~1800 tranzistor']
+    ],
+    color: 0xd8b4fe, color2: 0xf0abfc
+  },
+  {
     id: 'transistor',
     scale: 'Tranzistor — ~10⁻⁸ m (10 nm)',
-    kicker: '10 — TRANZISTOR',
+    kicker: '12 — TRANZISTOR',
     title: 'CMOS: kremniydan yasalgan kalit',
     lead: 'Har bir mantiqiy element — bir nechta tranzistor. Tranzistor esa oddiy boshqariladigan kalit.',
     body: [
@@ -192,9 +231,28 @@ export const LEVELS = [
     color: 0xf472b6, color2: 0xfb923c
   },
   {
+    id: 'memory',
+    scale: 'Xotira yacheykasi — ~10⁻⁸ m',
+    kicker: '13 — XOTIRA',
+    title: 'Bit qayerda yotadi',
+    lead: 'Kesh, RAM va SSD — uchalasi ham tranzistordan, lekin uchta butunlay boshqa hiyla bilan.',
+    body: [
+      '<b>SRAM</b> (kesh): 6 ta tranzistor bir-birini ushlab turadi — ikki invertor halqa qilib ulangan. Juda tez (~1 ns), lekin qimmat va katta joy egallaydi. Tok uzilsa yo\'qoladi.',
+      '<b>DRAM</b> (RAM): atigi 1 tranzistor + 1 kondensator. Arzon va zich, lekin kondensator <b>oqib ketadi</b> — shuning uchun har ~64 ms da butun xotira <b>refresh</b> qilinadi. Kompyuteringiz hozir ham buni sekundiga o\'n besh marta bajarayapti.',
+      '<b>NAND flash</b> (SSD): tranzistorning gate\'i ichida ikkinchi, <b>suzuvchi gate</b> bor. Unga elektron qamab qo\'yiladi va tok uzilsa ham qolaveradi — fayllaringiz shuning uchun saqlanadi.',
+      'Eng qizig\'i: elektron o\'sha izolyatsiya qatlamidan <b>tunnellashuv</b> orqali o\'tkaziladi. Oxirgi qatlamlarda shu hodisani yana ko\'rasiz — u yerda u nuqson, bu yerda esa butun sanoat unga tayanadi.'
+    ],
+    facts: [
+      ['SRAM', '6T · ~1 ns · uchuvchan'],
+      ['DRAM', '1T1C · refresh kerak'],
+      ['Flash', 'suzuvchi gate · tunnellashuv']
+    ],
+    color: 0x5eead4, color2: 0x22d3ee
+  },
+  {
     id: 'silicon',
     scale: 'Kristall panjara — ~10⁻¹⁰ m (atomlar)',
-    kicker: '11 — MATERIAL',
+    kicker: '14 — MATERIAL',
     title: 'Kremniy, doping va PN o\'tish',
     lead: 'Kalit nima uchun ishlaydi? Chunki kremniy atomlariga boshqa atomlar qo\'shilgan.',
     body: [
@@ -213,7 +271,7 @@ export const LEVELS = [
   {
     id: 'quantum',
     scale: 'Kvant darajasi — elektron to\'lqin funksiyasi',
-    kicker: '12 — KVANT FIZIKASI',
+    kicker: '15 — KVANT FIZIKASI',
     title: 'Zona nazariyasi va tunnellashuv',
     lead: 'Eng pastki qavat. Bu yerda "zarracha" degan tushuncha yo\'qoladi va ehtimollik boshlanadi.',
     body: [
@@ -228,5 +286,25 @@ export const LEVELS = [
       ['Chegara', 'Tunnellashuv → sizish toki']
     ],
     color: 0xc084fc, color2: 0x38bdf8
+  },
+  {
+    id: 'screen',
+    scale: 'Ekran — bayt yana yorug\'likka aylanadi',
+    kicker: '16 — YORUG\'LIK',
+    title: 'Baytdan fotongacha',
+    lead: 'Pastga sayohat tugadi. Endi natija yuqoriga qaytadi — va yana kvant bilan tugaydi.',
+    body: [
+      'Terminal buferida "Salom" hali ham baytlar. <b>Rasterizator</b> har bir harfning shrift ichidagi <b>konturini</b> oladi va uni piksellar to\'riga bo\'yaydi, chetlarini silliqlab (antialiasing).',
+      'Natija <b>framebuffer</b>ga tushadi — ekrandagi har bir piksel uchun R, G, B qiymatlari yozilgan katta massiv. GPU uni sekundiga 60+ marta panelga uzatadi.',
+      'Har bir piksel aslida <b>uchta subpiksel</b>: qizil, yashil, ko\'k. Ularning nisbati rangni beradi; oq harf demak uchalasi ham to\'liq yonadi.',
+      '<b>OLED</b> da har bir subpiksel — kichkina organik diod. Kuchlanish berilsa elektron va kovak uchrashib <b>rekombinatsiya</b> qiladi: elektron pastroq energiya sathiga tushadi va farqni <b>foton</b> sifatida chiqaradi.',
+      'Ya\'ni ko\'zingizga kelayotgan yorug\'lik — o\'sha zona nazariyasining o\'zi. <code>Console.WriteLine("Salom")</code> dan boshlangan yo\'l elektronning energiya sathidan sakrashi bilan tugaydi.'
+    ],
+    facts: [
+      ['Rasterizatsiya', 'kontur → piksel to\'ri'],
+      ['Piksel', '3 subpiksel: R · G · B'],
+      ['OLED', 'rekombinatsiya → foton']
+    ],
+    color: 0xfbbf24, color2: 0xfde68a
   }
 ];

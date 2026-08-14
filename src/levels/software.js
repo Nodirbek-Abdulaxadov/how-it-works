@@ -1,4 +1,4 @@
-// 1–5 qatlamlar: manba kod → AST → IL → JIT → mashina kodi.
+// 1–6 qatlamlar: manba kod → AST → IL → JIT → mashina kodi → chaqiruvlar steki.
 import * as THREE from 'three';
 import {
   textPlane, label, segments, curveLine, wireBox, panel,
@@ -505,6 +505,173 @@ export function buildMachine(meta) {
         if (arr[i * 3 + 1] < -12) arr[i * 3 + 1] = -3 + Math.random() * 1.5;
       }
       rain.geometry.attributes.position.needsUpdate = true;
+    }
+  };
+}
+
+// ── 06. Chaqiruvlar steki ───────────────────────────────────────────────────
+export function buildStack(meta) {
+  const g = new THREE.Group();
+
+  const COL = -7.4;          // stek ustuni markazi
+  const FW = 8.6, FH = 2.3, FGAP = 0.34;
+  const topY = 6.4;
+  const yOf = (i) => topY - i * (FH + FGAP);
+
+  const hi = label('yuqori manzil   0x7fff_ffff_e000', { size: 19, color: '#64748b' });
+  hi.position.set(COL, 8.9, 0);
+  g.add(hi);
+  const grow = label('stek pastga o\'sadi', { size: 21, color: meta.color });
+  grow.position.set(COL, 8.1, 0);
+  g.add(grow);
+
+  // Chap tomonda pastga qaragan o'q
+  const axisX = COL - FW / 2 - 1.5;
+  g.add(segments([
+    new THREE.Vector3(axisX, 7.4, 0), new THREE.Vector3(axisX, -5.4, 0),
+    new THREE.Vector3(axisX, -5.4, 0), new THREE.Vector3(axisX - 0.42, -4.6, 0),
+    new THREE.Vector3(axisX, -5.4, 0), new THREE.Vector3(axisX + 0.42, -4.6, 0)
+  ], '#475569', 0.7));
+
+  const FRAMES = [
+    ['Main()', 'Program.cs — birinchi kadr', '#a5f3fc'],
+    ['Console.WriteLine(string)', 'argument: "Salom"', '#93c5fd'],
+    ['Stream.Write(byte[])', 'lokal: buf, n', '#93c5fd'],
+    ['write(1, buf, 6)', 'eng yangi kadr', '#7dd3fc']
+  ];
+
+  const frameObjs = FRAMES.map(([name, sub, col], i) => {
+    const box = panel(FW, FH, 0.9, col, { fill: 0.07, edgeOpacity: 0.55 });
+    box.position.set(COL, yOf(i), 0);
+    g.add(box);
+    const txt = textPlane(
+      [
+        [{ text: name, color: col, weight: '600' }],
+        [{ text: sub, color: '#64748b' }]
+      ],
+      { size: 24, height: 1.35, align: 'center' }
+    );
+    txt.position.set(COL, yOf(i), 0.7);
+    g.add(txt);
+    return { box, txt, i };
+  });
+
+  // rbp / rsp ko'rsatkichlari
+  const ptr = (txt, col) => {
+    const grp = new THREE.Group();
+    const line = segments([new THREE.Vector3(0, 0, 0), new THREE.Vector3(1.5, 0, 0)], col, 0.9);
+    grp.add(line);
+    const tag = label(txt, { size: 22, color: col, weight: '600' });
+    tag.position.set(2.5, 0, 0);
+    grp.add(tag);
+    g.add(grp);
+    return grp;
+  };
+  const rbp = ptr('rbp — kadr asosi', '#fbbf24');
+  const rsp = ptr('rsp — stek cho\'qqisi', '#4ade80');
+
+  // ---- O'ngda: bitta kadr ichi ----
+  const slotTitle = label('bitta kadr ichida nima bor', { size: 24, color: '#cbd5e1' });
+  slotTitle.position.set(7.4, 7.4, 0);
+  g.add(slotTitle);
+
+  const SLOTS = [
+    ['[rbp+16]', 'argument: "Salom"', '#a5f3fc'],
+    ['[rbp+8]', 'qaytish manzili → 0x7f3a1c40', '#fbbf24'],
+    ['[rbp]', 'saqlangan rbp', '#94a3b8'],
+    ['[rbp-8]', 'lokal: n = 6', '#86efac'],
+    ['[rbp-16]', 'lokal: buf', '#86efac']
+  ];
+  const slotObjs = SLOTS.map(([addr, what, col], i) => {
+    const row = textPlane(
+      [[{ text: addr.padEnd(10), color: '#64748b' }, { text: what, color: col }]],
+      { size: 24, height: 0.78, bg: 'rgba(9,14,28,0.86)', border: 'rgba(148,163,184,0.16)', padX: 16, padY: 10 }
+    );
+    row.position.set(7.4, 5.9 - i * 1.15, 0);
+    g.add(row);
+    return row;
+  });
+
+  const callRet = textPlane(
+    [
+      [{ text: 'call', color: '#fbbf24', weight: '600' }, { text: '  →  qaytish manzilini stekka qo\'yadi', color: '#94a3b8' }],
+      [{ text: 'ret ', color: '#fbbf24', weight: '600' }, { text: '  →  uni yechib, o\'sha manzilga qaytadi', color: '#94a3b8' }]
+    ],
+    { size: 23, height: 1.5, align: 'left' }
+  );
+  callRet.position.set(7.4, -1.2, 0);
+  g.add(callRet);
+
+  // ---- Pastda: stek to'lib ketishi ----
+  const ovTitle = label('cheksiz rekursiya', { size: 22, color: '#fca5a5' });
+  ovTitle.position.set(7.4, -3.6, 0);
+  g.add(ovTitle);
+
+  const OV_N = 15;
+  const ovBars = [];
+  for (let i = 0; i < OV_N; i++) {
+    const bar = new THREE.Mesh(
+      new THREE.PlaneGeometry(6.4, 0.24),
+      new THREE.MeshBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0, depthWrite: false })
+    );
+    bar.position.set(7.4, -4.4 - i * 0.36, 0);
+    g.add(bar);
+    ovBars.push(bar);
+  }
+  const guard = segments([
+    new THREE.Vector3(7.4 - 3.6, -10.2, 0), new THREE.Vector3(7.4 + 3.6, -10.2, 0)
+  ], '#f87171', 0.8);
+  g.add(guard);
+  const guardTag = label('himoya sahifasi (guard page)', { size: 19, color: '#f87171' });
+  guardTag.position.set(7.4, -10.9, 0);
+  g.add(guardTag);
+  const boom = label('StackOverflowException', { size: 26, color: '#fecaca', weight: '700' });
+  boom.position.set(7.4, -8.6, 0.6);
+  boom.material.opacity = 0;
+  g.add(boom);
+
+  const note = textPlane(
+    [[{ text: '"push" aslida shunchaki rsp ni kamaytirish — stek oddiy xotira sohasi xolos.', color: '#94a3b8' }]],
+    { size: 24, height: 0.78, align: 'center' }
+  );
+  note.position.set(0, -12.6, 0);
+  g.add(note);
+
+  return {
+    group: g,
+    update(t) {
+      // Ikki chuqur kadr navbat bilan push/pop bo'ladi
+      const phase = (t * 0.34) % 1;
+      const depth = phase < 0.42 ? 2 + Math.floor(phase / 0.21) : phase < 0.62 ? 4 : 4 - Math.ceil((phase - 0.62) / 0.19);
+      const shown = clamp(depth, 2, 4);
+
+      frameObjs.forEach(({ box, txt, i }) => {
+        const on = i < shown;
+        box.visible = on;
+        txt.visible = on;
+        const fresh = i === shown - 1;
+        box.userData.fillMesh.material.opacity = fresh ? 0.2 : 0.06;
+        txt.material.opacity = fresh ? 1 : 0.62;
+      });
+
+      const deepest = shown - 1;
+      rbp.position.set(COL + FW / 2 + 0.3, yOf(deepest) + FH / 2 - 0.25, 0.4);
+      rsp.position.set(COL + FW / 2 + 0.3, yOf(deepest) - FH / 2 + 0.25, 0.4);
+
+      slotObjs.forEach((r, i) => {
+        r.material.opacity = 0.55 + 0.45 * pulse(t, 1.6, i * 0.6);
+      });
+
+      // Rekursiya stekni to'ldiradi, keyin himoya sahifasiga uriladi
+      const fill = (t * 0.19) % 1;
+      const filled = Math.floor(fill * (OV_N + 5));
+      ovBars.forEach((b, i) => {
+        b.material.opacity = i < filled ? 0.75 : 0;
+        b.material.color.set(i > OV_N - 5 ? 0xf87171 : 0x60a5fa);
+      });
+      const overflowed = filled >= OV_N;
+      boom.material.opacity = overflowed ? 0.6 + 0.4 * pulse(t, 9) : 0;
+      guard.material.opacity = overflowed ? 0.4 + 0.5 * pulse(t, 9) : 0.35;
     }
   };
 }

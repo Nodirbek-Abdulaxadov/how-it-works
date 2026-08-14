@@ -1,11 +1,203 @@
-// 10–12 qatlamlar: CMOS tranzistor → kremniy kristalli va PN o'tish → kvant fizikasi.
+// 11–15 qatlamlar: gate ichi → CMOS tranzistor → xotira yacheykasi →
+// kremniy kristalli va PN o'tish → kvant fizikasi.
 import * as THREE from 'three';
 import {
   textPlane, label, segments, curveLine, wireBox, panel,
   points, orb, glowSprite, lineMat, pulse, clamp, lerp
 } from '../lib/gfx.js';
 
-// ── 10. CMOS tranzistor ─────────────────────────────────────────────────────
+// ── 11. Gate ichida: XOR → NAND → tranzistorlar ─────────────────────────────
+export function buildGates(meta) {
+  const g = new THREE.Group();
+
+  // Uchburchak korpus; `bubble` bo'lsa chiqishga inkor doirachasi qo'shiladi (NAND)
+  const gateShape = (name, x, y, col, bubble = false, s = 1) => {
+    const grp = new THREE.Group();
+    const pts = [
+      new THREE.Vector3(-1.15 * s, 1.25 * s, 0),
+      new THREE.Vector3(-1.15 * s, -1.25 * s, 0),
+      new THREE.Vector3(1.15 * s, 0, 0)
+    ];
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    geo.setIndex([0, 1, 2]);
+    const fill = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+      color: col, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false
+    }));
+    grp.add(fill, new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), lineMat(col, 0.85)));
+
+    if (bubble) {
+      const r = 0.26 * s;
+      const circle = new THREE.LineLoop(
+        new THREE.BufferGeometry().setFromPoints(
+          new THREE.EllipseCurve(1.15 * s + r, 0, r, r, 0, Math.PI * 2).getPoints(24)
+            .map((p) => new THREE.Vector3(p.x, p.y, 0))
+        ),
+        lineMat(col, 0.85)
+      );
+      grp.add(circle);
+    }
+
+    const nm = label(name, { size: 20, color: '#f1f5f9', weight: '600', height: 0.44 * s });
+    nm.position.set(-0.3 * s, 0, 0.2);
+    grp.add(nm);
+
+    grp.position.set(x, y, 0);
+    g.add(grp);
+    return { grp, fill };
+  };
+
+  const stageTag = (txt, x, y, col) => {
+    const l = label(txt, { size: 23, color: col });
+    l.position.set(x, y, 0);
+    g.add(l);
+    return l;
+  };
+
+  // ---- 1-bosqich: belgi ----
+  stageTag('belgi', -11.6, 7.4, '#cbd5e1');
+  const xor = gateShape('XOR', -11.6, 4, '#a78bfa');
+  g.add(segments([
+    new THREE.Vector3(-14.2, 4.6, 0), new THREE.Vector3(-12.75, 4.6, 0),
+    new THREE.Vector3(-14.2, 3.4, 0), new THREE.Vector3(-12.75, 3.4, 0),
+    new THREE.Vector3(-10.45, 4, 0), new THREE.Vector3(-9.2, 4, 0)
+  ], '#64748b', 0.55));
+  stageTag('A', -14.7, 4.6, '#94a3b8');
+  stageTag('B', -14.7, 3.4, '#94a3b8');
+  stageTag('S', -8.7, 4, '#94a3b8');
+
+  // ---- 2-bosqich: 4 ta NAND ----
+  stageTag('4 ta NAND', -1.4, 7.4, '#cbd5e1');
+  const n1 = gateShape('NAND', -4.6, 4, '#f0abfc', true, 0.82);
+  const n2 = gateShape('NAND', -0.4, 6.2, '#f0abfc', true, 0.82);
+  const n3 = gateShape('NAND', -0.4, 1.8, '#f0abfc', true, 0.82);
+  const n4 = gateShape('NAND', 3.4, 4, '#f0abfc', true, 0.82);
+
+  const wires = [
+    // A, B -> N1
+    [new THREE.Vector3(-7.4, 4.6, 0), new THREE.Vector3(-5.7, 4.5, 0)],
+    [new THREE.Vector3(-7.4, 3.4, 0), new THREE.Vector3(-5.7, 3.5, 0)],
+    // N1 -> N2, N3
+    [new THREE.Vector3(-3.2, 4, 0), new THREE.Vector3(-2.6, 4, 0), new THREE.Vector3(-2.6, 6.4, 0), new THREE.Vector3(-1.5, 6.4, 0)],
+    [new THREE.Vector3(-3.2, 4, 0), new THREE.Vector3(-2.6, 4, 0), new THREE.Vector3(-2.6, 1.6, 0), new THREE.Vector3(-1.5, 1.6, 0)],
+    // A -> N2, B -> N3
+    [new THREE.Vector3(-7.4, 4.6, 0), new THREE.Vector3(-6.6, 4.6, 0), new THREE.Vector3(-6.6, 6.0, 0), new THREE.Vector3(-1.5, 6.0, 0)],
+    [new THREE.Vector3(-7.4, 3.4, 0), new THREE.Vector3(-6.9, 3.4, 0), new THREE.Vector3(-6.9, 2.0, 0), new THREE.Vector3(-1.5, 2.0, 0)],
+    // N2, N3 -> N4
+    [new THREE.Vector3(1.0, 6.2, 0), new THREE.Vector3(1.7, 6.2, 0), new THREE.Vector3(1.7, 4.5, 0), new THREE.Vector3(2.3, 4.5, 0)],
+    [new THREE.Vector3(1.0, 1.8, 0), new THREE.Vector3(1.7, 1.8, 0), new THREE.Vector3(1.7, 3.5, 0), new THREE.Vector3(2.3, 3.5, 0)],
+    // N4 -> S
+    [new THREE.Vector3(4.8, 4, 0), new THREE.Vector3(6.1, 4, 0)]
+  ].map((pts) => {
+    const l = pts.length === 2 ? segments(pts, '#64748b', 0.55) : curveLine(pts, '#64748b', 0.5, 30);
+    g.add(l);
+    return l;
+  });
+
+  // ---- 3-bosqich: bitta NAND ichidagi 4 tranzistor ----
+  stageTag('bitta NAND ichi', 10.6, 7.4, '#cbd5e1');
+
+  const railY = [6.2, -3.4];
+  g.add(segments([
+    new THREE.Vector3(7.4, railY[0], 0), new THREE.Vector3(13.8, railY[0], 0),
+    new THREE.Vector3(7.4, railY[1], 0), new THREE.Vector3(13.8, railY[1], 0)
+  ], '#64748b', 0.6));
+  stageTag('VDD', 6.5, railY[0], '#fbbf24');
+  stageTag('GND', 6.5, railY[1], '#94a3b8');
+
+  const fet = (x, y, col, tag) => {
+    const p = panel(2.3, 1.5, 0.6, col, { fill: 0.14, edgeOpacity: 0.7 });
+    p.position.set(x, y, 0);
+    g.add(p);
+    const l = label(tag, { size: 17, color: col });
+    l.position.set(x, y, 0.5);
+    g.add(l);
+    return p;
+  };
+  // 2 ta PMOS parallel (yuqorida), 2 ta NMOS ketma-ket (pastda)
+  const p1 = fet(9.2, 4.6, '#f472b6', 'PMOS');
+  const p2 = fet(12.2, 4.6, '#f472b6', 'PMOS');
+  const n5 = fet(10.7, 0.4, '#34d399', 'NMOS');
+  const n6 = fet(10.7, -1.9, '#34d399', 'NMOS');
+
+  g.add(segments([
+    new THREE.Vector3(9.2, railY[0], 0), new THREE.Vector3(9.2, 5.35, 0),
+    new THREE.Vector3(12.2, railY[0], 0), new THREE.Vector3(12.2, 5.35, 0),
+    new THREE.Vector3(9.2, 3.85, 0), new THREE.Vector3(9.2, 2.4, 0),
+    new THREE.Vector3(12.2, 3.85, 0), new THREE.Vector3(12.2, 2.4, 0),
+    new THREE.Vector3(9.2, 2.4, 0), new THREE.Vector3(12.2, 2.4, 0),
+    new THREE.Vector3(10.7, 2.4, 0), new THREE.Vector3(10.7, 1.15, 0),
+    new THREE.Vector3(10.7, -0.35, 0), new THREE.Vector3(10.7, -1.15, 0),
+    new THREE.Vector3(10.7, -2.65, 0), new THREE.Vector3(10.7, railY[1], 0),
+    new THREE.Vector3(10.7, 2.4, 0), new THREE.Vector3(13.8, 2.4, 0)
+  ], '#64748b', 0.55));
+  stageTag('chiqish', 14.6, 2.4, '#94a3b8');
+
+  // Kirishlar gate'larga
+  g.add(segments([
+    new THREE.Vector3(7.6, 4.6, 0), new THREE.Vector3(8.05, 4.6, 0),
+    new THREE.Vector3(7.6, 0.4, 0), new THREE.Vector3(9.55, 0.4, 0),
+    new THREE.Vector3(7.6, -1.9, 0), new THREE.Vector3(9.55, -1.9, 0),
+    new THREE.Vector3(11.05, 4.6, 0), new THREE.Vector3(11.05, 4.6, 0)
+  ], '#475569', 0.5));
+
+  // ---- Bosqichlar orasidagi "ochamiz" o'qlari ----
+  [[-8.2, 4], [6.6, 4]].forEach(([x, y]) => {
+    const l = label('ochamiz →', { size: 20, color: '#64748b' });
+    l.position.set(x, y + 1.1, 0);
+    g.add(l);
+  });
+
+  // ---- Pastda: hisob ----
+  const counts = [
+    ['1 NAND', '4 tranzistor', '#f0abfc'],
+    ['1 XOR', '4 NAND = 16 tranzistor', '#a78bfa'],
+    ['1 bitli summator', '~28 tranzistor', '#7dd3fc'],
+    ['64-bitli summator', '~1800 tranzistor', '#fbbf24']
+  ];
+  const countObjs = counts.map(([k, v, col], i) => {
+    const m = textPlane(
+      [
+        [{ text: k, color: '#64748b' }],
+        [{ text: v, color: col, weight: '600' }]
+      ],
+      { size: 24, height: 1.5, align: 'center' }
+    );
+    m.position.set(-10.5 + i * 7, -7, 0);
+    g.add(m);
+    return m;
+  });
+
+  const note = textPlane(
+    [[{ text: 'Mana shu yerda "mantiq" tugaydi va "fizika" boshlanadi.', color: '#94a3b8' }]],
+    { size: 25, height: 0.8, align: 'center' }
+  );
+  note.position.set(0, -9.4, 0);
+  g.add(note);
+
+  const stages = [[xor], [n1, n2, n3, n4], [p1, p2, n5, n6]];
+
+  return {
+    group: g,
+    update(t) {
+      const active = Math.floor(t * 0.5) % 3;
+      stages.forEach((objs, i) => {
+        const on = i === active;
+        objs.forEach((o) => {
+          const mat = o.fill ? o.fill.material : o.userData.fillMesh.material;
+          mat.opacity = on ? 0.14 + 0.16 * pulse(t, 3) : 0.06;
+        });
+      });
+      wires.forEach((w, i) => {
+        w.material.opacity = active === 1 ? 0.35 + 0.3 * pulse(t, 2, i * 0.4) : 0.22;
+      });
+      countObjs.forEach((m, i) => {
+        m.material.opacity = 0.5 + 0.5 * pulse(t, 1.1, i * 0.8);
+      });
+    }
+  };
+}
+
+// ── 12. CMOS tranzistor ─────────────────────────────────────────────────────
 export function buildTransistor(meta) {
   const g = new THREE.Group();
 
@@ -175,7 +367,204 @@ export function buildTransistor(meta) {
   };
 }
 
-// ── 11. Kremniy kristalli, doping, PN o'tish ────────────────────────────────
+// ── 13. Xotira yacheykasi: SRAM · DRAM · flash ──────────────────────────────
+export function buildMemory(meta) {
+  const g = new THREE.Group();
+
+  const cellTitle = (name, sub, x, col) => {
+    const m = textPlane(
+      [
+        [{ text: name, color: col, weight: '700' }],
+        [{ text: sub, color: '#64748b' }]
+      ],
+      { size: 26, height: 1.6, align: 'center' }
+    );
+    m.position.set(x, 7.4, 0);
+    g.add(m);
+  };
+
+  const fetBox = (x, y, col, tag, w = 1.9, h = 1.3) => {
+    const p = panel(w, h, 0.5, col, { fill: 0.13, edgeOpacity: 0.65 });
+    p.position.set(x, y, 0);
+    g.add(p);
+    if (tag) {
+      const l = label(tag, { size: 16, color: col });
+      l.position.set(x, y, 0.45);
+      g.add(l);
+    }
+    return p;
+  };
+
+  // ---- SRAM: ikki invertor halqasi + 2 kirish tranzistori ----
+  cellTitle('SRAM', 'kesh · 6 tranzistor · ~1 ns', -10.5, '#a5f3fc');
+  const inv1 = fetBox(-12.2, 3.4, '#7dd3fc', 'invertor', 2.6, 1.5);
+  const inv2 = fetBox(-8.8, 3.4, '#7dd3fc', 'invertor', 2.6, 1.5);
+  g.add(segments([
+    new THREE.Vector3(-12.2, 4.15, 0), new THREE.Vector3(-12.2, 5, 0),
+    new THREE.Vector3(-12.2, 5, 0), new THREE.Vector3(-8.8, 5, 0),
+    new THREE.Vector3(-8.8, 5, 0), new THREE.Vector3(-8.8, 4.15, 0),
+    new THREE.Vector3(-12.2, 2.65, 0), new THREE.Vector3(-12.2, 1.8, 0),
+    new THREE.Vector3(-12.2, 1.8, 0), new THREE.Vector3(-8.8, 1.8, 0),
+    new THREE.Vector3(-8.8, 1.8, 0), new THREE.Vector3(-8.8, 2.65, 0),
+    new THREE.Vector3(-13.5, 3.4, 0), new THREE.Vector3(-13.5, 0.2, 0),
+    new THREE.Vector3(-7.5, 3.4, 0), new THREE.Vector3(-7.5, 0.2, 0)
+  ], '#64748b', 0.5));
+  const sramAcc = [fetBox(-13.5, -0.6, '#34d399', null, 1.5, 1.1), fetBox(-7.5, -0.6, '#34d399', null, 1.5, 1.1)];
+  const sramBit = label('1', { size: 34, color: '#a5f3fc', font: '"JetBrains Mono", monospace', weight: '700' });
+  sramBit.position.set(-10.5, 3.4, 0.6);
+  g.add(sramBit);
+  const sramNote = textPlane(
+    [[{ text: 'ikki invertor bir-birini ushlab turadi —', color: '#64748b' }],
+     [{ text: 'tok bor ekan, bit turaveradi', color: '#94a3b8' }]],
+    { size: 22, height: 1.4, align: 'center' }
+  );
+  sramNote.position.set(-10.5, -3.2, 0);
+  g.add(sramNote);
+
+  // ---- DRAM: 1 tranzistor + 1 kondensator ----
+  cellTitle('DRAM', 'RAM · 1T + 1C · ~50 ns', 0, '#fbbf24');
+  const dramT = fetBox(-1.6, 3.4, '#34d399', 'T', 1.7, 1.2);
+  g.add(segments([
+    new THREE.Vector3(-1.6, 4.6, 0), new THREE.Vector3(-1.6, 5.6, 0),
+    new THREE.Vector3(-0.75, 3.4, 0), new THREE.Vector3(1.2, 3.4, 0),
+    new THREE.Vector3(1.2, 1.2, 0), new THREE.Vector3(1.2, 0.4, 0),
+    new THREE.Vector3(-3.4, 3.4, 0), new THREE.Vector3(-2.45, 3.4, 0)
+  ], '#64748b', 0.5));
+  const wl = label('word line', { size: 17, color: '#64748b' });
+  wl.position.set(-1.6, 6.1, 0);
+  g.add(wl);
+  const bl = label('bit line', { size: 17, color: '#64748b' });
+  bl.position.set(-4.3, 3.4, 0);
+  g.add(bl);
+
+  // Kondensator plastinkalari
+  g.add(segments([
+    new THREE.Vector3(0.2, 1.2, 0), new THREE.Vector3(2.2, 1.2, 0),
+    new THREE.Vector3(0.2, 0.4, 0), new THREE.Vector3(2.2, 0.4, 0),
+    new THREE.Vector3(1.2, 3.4, 0), new THREE.Vector3(1.2, 1.2, 0),
+    new THREE.Vector3(1.2, 0.4, 0), new THREE.Vector3(1.2, -0.6, 0),
+    new THREE.Vector3(0.5, -0.6, 0), new THREE.Vector3(1.9, -0.6, 0)
+  ], '#64748b', 0.6));
+  const charge = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.9, 0.62),
+    new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.6, depthWrite: false })
+  );
+  charge.position.set(1.2, 0.8, -0.1);
+  g.add(charge);
+  const capTag = label('kondensator', { size: 17, color: '#fbbf24' });
+  capTag.position.set(3.6, 0.8, 0);
+  g.add(capTag);
+
+  // Oqib ketayotgan elektronlar
+  const leak = [];
+  for (let i = 0; i < 6; i++) {
+    const s = glowSprite('#fbbf24', 0.42);
+    g.add(s);
+    leak.push({ s, off: i / 6 });
+  }
+  const refreshTag = label('refresh — har ~64 ms', { size: 21, color: '#fbbf24' });
+  refreshTag.position.set(0, -2.6, 0);
+  g.add(refreshTag);
+  const dramNote = textPlane(
+    [[{ text: 'kondensator oqib ketadi, shuning uchun', color: '#64748b' }],
+     [{ text: 'xotira doimiy yangilanib turadi', color: '#94a3b8' }]],
+    { size: 22, height: 1.4, align: 'center' }
+  );
+  dramNote.position.set(0, -4.2, 0);
+  g.add(dramNote);
+
+  // ---- Flash: suzuvchi gate ----
+  cellTitle('NAND flash', 'SSD · suzuvchi gate · doimiy', 10.5, '#c4b5fd');
+  const slab = (w, h, col, op, x, y) => {
+    const m = new THREE.Mesh(
+      new THREE.PlaneGeometry(w, h),
+      new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: op, depthWrite: false })
+    );
+    m.position.set(x, y, 0);
+    g.add(m);
+    const e = wireBox(w, h, 0.001, col, 0.5);
+    e.position.set(x, y, 0);
+    g.add(e);
+    return m;
+  };
+  slab(8.4, 1.8, 0x1e3a5f, 0.5, 10.5, 0.3);                    // substrat
+  slab(2, 1.4, 0x34d399, 0.5, 7.6, 1);                          // source
+  slab(2, 1.4, 0x34d399, 0.5, 13.4, 1);                         // drain
+  const oxide1 = slab(4.4, 0.5, 0xfbbf24, 0.35, 10.5, 1.7);      // tunnel oksidi
+  const floatG = slab(4.4, 0.9, 0xc4b5fd, 0.45, 10.5, 2.5);      // suzuvchi gate
+  slab(4.4, 0.4, 0xfbbf24, 0.35, 10.5, 3.2);                     // blokirovka oksidi
+  const ctrlG = slab(4.4, 1, 0xf472b6, 0.5, 10.5, 3.9);          // boshqaruv gate'i
+
+  [['boshqaruv gate', 3.9, '#f9a8d4'], ['suzuvchi gate', 2.5, '#ddd6fe'],
+   ['tunnel oksidi', 1.7, '#fcd34d'], ['substrat', 0.3, '#93c5fd']].forEach(([txt, y, col]) => {
+    const l = label(txt, { size: 17, color: col });
+    l.position.set(15.4, y, 0.3);
+    g.add(l);
+  });
+
+  // Tunnellashuvchi elektronlar
+  const tun = [];
+  for (let i = 0; i < 5; i++) {
+    const s = glowSprite('#e9d5ff', 0.5);
+    g.add(s);
+    tun.push({ s, x: 8.9 + i * 0.8, off: i * 0.19 });
+  }
+  const flashNote = textPlane(
+    [[{ text: 'elektron oksiddan tunnellashib o\'tadi va', color: '#64748b' }],
+     [{ text: 'suzuvchi gate ichida qamalib qoladi', color: '#94a3b8' }]],
+    { size: 22, height: 1.4, align: 'center' }
+  );
+  flashNote.position.set(10.5, -3.2, 0);
+  g.add(flashNote);
+
+  const finale = textPlane(
+    [[{ text: 'Oxirgi qatlamlarda tunnellashuvni nuqson sifatida ko\'rasiz — bu yerda esa butun sanoat unga tayanadi.', color: '#cbd5e1' }]],
+    { size: 24, height: 0.8, align: 'center' }
+  );
+  finale.position.set(1, -6.6, 0);
+  g.add(finale);
+
+  return {
+    group: g,
+    update(t) {
+      const beat = Math.floor(t * 1.5) % 2;
+      sramBit.material.opacity = 0.55 + 0.45 * (beat ? 1 : 0.55);
+      [inv1, inv2].forEach((p, i) => {
+        p.userData.fillMesh.material.opacity = 0.08 + 0.14 * pulse(t, 3, i * Math.PI);
+      });
+      sramAcc.forEach((p, i) => {
+        p.userData.fillMesh.material.opacity = 0.07 + 0.1 * pulse(t, 1.4, i);
+      });
+
+      // DRAM: zaryad asta kamayadi, keyin refresh uni tiklaydi
+      const cyc = (t * 0.32) % 1;
+      const level = cyc < 0.82 ? 1 - cyc / 0.82 * 0.75 : 1;
+      charge.scale.y = level;
+      charge.position.y = 0.4 + 0.31 * level;
+      charge.material.opacity = 0.25 + 0.45 * level;
+      dramT.userData.fillMesh.material.opacity = cyc > 0.82 ? 0.3 : 0.08;
+      refreshTag.material.opacity = cyc > 0.82 ? 1 : 0.3;
+      leak.forEach(({ s, off }) => {
+        const k = (t * 0.5 + off) % 1;
+        s.position.set(1.2 + (k - 0.5) * 2.6, 0.8 - k * 1.4, 0.4);
+        s.material.opacity = cyc < 0.82 ? Math.sin(k * Math.PI) * 0.55 : 0;
+      });
+
+      // Flash: elektronlar oksiddan suzuvchi gate ichiga o'tadi
+      floatG.material.opacity = 0.3 + 0.25 * pulse(t, 0.8);
+      ctrlG.material.opacity = 0.35 + 0.25 * pulse(t, 0.8);
+      oxide1.material.opacity = 0.25 + 0.2 * pulse(t, 2);
+      tun.forEach(({ s, x, off }) => {
+        const k = (t * 0.34 + off) % 1;
+        s.position.set(x, 0.9 + k * 1.7, 0.4);
+        // to'siq ichida so'nadi, narigi tomonda tiklanadi
+        s.material.opacity = k < 0.35 ? 0.85 : k < 0.6 ? 0.15 : 0.7;
+      });
+    }
+  };
+}
+
+// ── 14. Kremniy kristalli, doping, PN o'tish ────────────────────────────────
 export function buildSilicon(meta) {
   const g = new THREE.Group();
 

@@ -37,7 +37,7 @@ function stripModuleSyntax(src) {
     .replace(/^\s*export\s*\{[^}]*\};?\s*$/gm, '');
 }
 
-const [three, css, gfx, content, software, system, hardware, main, html] = await Promise.all([
+const [three, css, gfx, content, software, system, hardware, output, main, html] = await Promise.all([
   read('vendor/three.module.min.js'),
   read('styles.css'),
   read('src/lib/gfx.js'),
@@ -45,6 +45,7 @@ const [three, css, gfx, content, software, system, hardware, main, html] = await
   read('src/levels/software.js'),
   read('src/levels/system.js'),
   read('src/levels/hardware.js'),
+  read('src/levels/output.js'),
   read('src/main.js'),
   read('index.html')
 ]);
@@ -54,7 +55,7 @@ const [three, css, gfx, content, software, system, hardware, main, html] = await
 const bundle = [
   inlineThree(three),
   '{',
-  ...[gfx, content, software, system, hardware, main].map(stripModuleSyntax),
+  ...[gfx, content, software, system, hardware, output, main].map(stripModuleSyntax),
   '}'
 ].join('\n');
 

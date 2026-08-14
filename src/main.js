@@ -1,15 +1,17 @@
 // Sahna, kamera sayohati va UI boshqaruvi.
 import * as THREE from 'three';
 import { LEVELS } from './content.js';
-import { buildSource, buildAst, buildIl, buildJit, buildMachine } from './levels/software.js';
+import { buildSource, buildAst, buildIl, buildJit, buildMachine, buildStack } from './levels/software.js';
 import { buildKernel, buildOs, buildCpu, buildLogic } from './levels/system.js';
-import { buildTransistor, buildSilicon, buildQuantum } from './levels/hardware.js';
+import { buildGates, buildTransistor, buildMemory, buildSilicon, buildQuantum } from './levels/hardware.js';
+import { buildScreen } from './levels/output.js';
 import { points, segments, clamp, lerp, damp, smooth } from './lib/gfx.js';
 
 const BUILDERS = [
-  buildSource, buildAst, buildIl, buildJit, buildMachine,
+  buildSource, buildAst, buildIl, buildJit, buildMachine, buildStack,
   buildKernel, buildOs, buildCpu, buildLogic,
-  buildTransistor, buildSilicon, buildQuantum
+  buildGates, buildTransistor, buildMemory, buildSilicon, buildQuantum,
+  buildScreen
 ];
 
 // Har bir qatlam uchun: kamera masofasi (z), vertikal markaz (y), kontent yarim kengligi (w).
@@ -20,13 +22,17 @@ const VIEW = [
   { z: 32, y: 0.6, w: 13.5 },  // 03 IL
   { z: 33, y: -1.4, w: 15 },   // 04 JIT
   { z: 31, y: 0.4, w: 14.5 },  // 05 mashina kodi
-  { z: 33, y: -1.1, w: 14.2 }, // 06 yadro / syscall
-  { z: 37, y: -1.6, w: 15 },   // 07 virtual xotira
-  { z: 35, y: -1.8, w: 16.5 }, // 08 CPU
-  { z: 33, y: -1.4, w: 14.5 }, // 09 mantiq
-  { z: 35, y: -1.8, w: 15.5 }, // 10 tranzistor
-  { z: 35, y: -3.2, w: 14.5 }, // 11 kremniy
-  { z: 35, y: -5, w: 16 }      // 12 kvant
+  { z: 34, y: -1.9, w: 13.5 }, // 06 chaqiruvlar steki
+  { z: 33, y: -1.1, w: 14.2 }, // 07 yadro / syscall
+  { z: 37, y: -1.6, w: 15 },   // 08 virtual xotira
+  { z: 35, y: -1.8, w: 16.5 }, // 09 CPU
+  { z: 33, y: -1.4, w: 14.5 }, // 10 mantiq
+  { z: 35, y: -1, w: 15.5 },   // 11 gate ichida
+  { z: 35, y: -1.8, w: 15.5 }, // 12 tranzistor
+  { z: 35, y: 0.4, w: 17 },    // 13 xotira yacheykasi
+  { z: 35, y: -3.2, w: 14.5 }, // 14 kremniy
+  { z: 35, y: -5, w: 16 },     // 15 kvant
+  { z: 34, y: -1.4, w: 14.5 }  // 16 ekran / foton
 ];
 
 const GAP = 72;
@@ -291,7 +297,7 @@ uiIndex = 0;
 frame();
 
 // Salomlashuv: konsolda ham bir og'iz
-console.log('%chow-it-works', 'color:#6ee7ff;font:600 14px monospace', '— C# dan kvant fizikasigacha, 12 qatlam.');
+console.log('%chow-it-works', 'color:#6ee7ff;font:600 14px monospace', '— C# dan kvant fizikasigacha, 16 qatlam.');
 
 // Sozlash/tekshirish uchun: joriy kamera holati va qatlam masshtabi
 globalThis.__debug = (probe = []) => ({
