@@ -47,17 +47,34 @@ function stripModuleSyntax(src) {
     .replace(/^\s*export\s*\{[^}]*\};?\s*$/gm, '');
 }
 
-const [three, css, gfx, content, software, system, hardware, output, main, html] = await Promise.all([
+// Bog'liqlik tartibi muhim: bir faylga jamlanganda hammasi bitta blokka tushadi.
+const MODULES = [
+  'src/lib/gfx.js',
+  'src/levels/heads/common.js',
+  'src/content/spine.js',
+  'src/content/heads/csharp.js',
+  'src/content/heads/python.js',
+  'src/content/heads/rust.js',
+  'src/content/heads/go.js',
+  'src/content/heads/javascript.js',
+  'src/levels/heads/csharp.js',
+  'src/levels/heads/python.js',
+  'src/levels/heads/rust.js',
+  'src/levels/heads/go.js',
+  'src/levels/heads/javascript.js',
+  'src/levels/spine/machine.js',
+  'src/levels/spine/system.js',
+  'src/levels/spine/hardware.js',
+  'src/levels/spine/output.js',
+  'src/languages.js',
+  'src/main.js'
+];
+
+const [three, css, html, ...modules] = await Promise.all([
   read('vendor/three.module.min.js'),
   read('styles.css'),
-  read('src/lib/gfx.js'),
-  read('src/content.js'),
-  read('src/levels/software.js'),
-  read('src/levels/system.js'),
-  read('src/levels/hardware.js'),
-  read('src/levels/output.js'),
-  read('src/main.js'),
-  read('index.html')
+  read('index.html'),
+  ...MODULES.map(read)
 ]);
 
 // Bizning kodimiz alohida blokda turadi: minifikatsiya qilingan three.js da bir harfli
@@ -65,7 +82,7 @@ const [three, css, gfx, content, software, system, hardware, output, main, html]
 const bundle = [
   inlineThree(three),
   '{',
-  ...[gfx, content, software, system, hardware, output, main].map(stripModuleSyntax),
+  ...modules.map(stripModuleSyntax),
   '}'
 ].join('\n');
 

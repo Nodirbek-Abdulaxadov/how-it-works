@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>C# kod kompyuterda qanday ishlaydi?</title>
-<meta name="description" content="C# kodidan tortib kvant fizikasigacha — 11 qatlamli interaktiv 3D vizualizatsiya.">
+<title>Kod kompyuterda qanday ishlaydi?</title>
+<meta name="description" content="C#, Python, Rust, Go va JavaScript kodidan tortib kvant fizikasigacha — interaktiv 3D vizualizatsiya.">
 <link rel="stylesheet" href="./styles.css">
 <script type="importmap">
 { "imports": { "three": "./vendor/three.module.min.js" } }
@@ -17,13 +17,14 @@
 <!-- Kirish ekrani -->
 <div id="hero">
   <div class="hero-inner">
-    <div class="hero-kicker">interaktiv vizualizatsiya · 16 qatlam</div>
-    <h1>C# kod kompyuterda<br>qanday ishlaydi?</h1>
+    <div class="hero-kicker">interaktiv vizualizatsiya · 5 til</div>
+    <h1>Kod kompyuterda<br>qanday ishlaydi?</h1>
     <p class="hero-lead">
-      Bitta <code>Console.WriteLine</code> chaqiruvi qanday qilib elektronlar harakatiga aylanadi?
+      Bitta chiqarish chaqiruvi qanday qilib elektronlar harakatiga aylanadi?
       Yozgan matningizdan boshlab, kompilyator, protsessor va tranzistorlar orqali
-      kvant fizikasining eng tubigacha tushamiz.
+      kvant fizikasining eng tubigacha tushamiz — so'ng natija yorug'lik bo'lib qaytadi.
     </p>
+    <div id="hero-langs" class="lang-row"></div>
     <button id="start">Sayohatni boshlash ↓</button>
     <div class="hero-hint">scroll · ↑ ↓ · yon paneldan tanlang</div>
   </div>
@@ -42,8 +43,9 @@
 <!-- O'ngdagi navigatsiya -->
 <nav id="rail" aria-label="Qatlamlar"></nav>
 
-<!-- Yuqori chap: masshtab -->
+<!-- Yuqori chap: masshtab va til tanlagich -->
 <div id="scale"></div>
+<div id="langs" class="lang-row"></div>
 
 <!-- Pastki progress -->
 <div id="progress"><div id="progress-bar"></div></div>

@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import {
   textPlane, label, segments, curveLine, wireBox, panel,
   points, orb, glowSprite, lineMat, pulse, clamp, lerp
-} from '../lib/gfx.js';
+} from '../../lib/gfx.js';
 
 // ── 11. Gate ichida: XOR → NAND → tranzistorlar ─────────────────────────────
 export function buildGates(meta) {

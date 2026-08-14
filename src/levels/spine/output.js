@@ -2,8 +2,8 @@
 import * as THREE from 'three';
 import {
   textPlane, label, segments, wireBox, panel,
-  orb, glowSprite, lineMat, pulse, clamp, lerp
-} from '../lib/gfx.js';
+  orb, glowSprite, lineMat, retext, pulse, clamp, lerp
+} from '../../lib/gfx.js';
 
 // "S" harfining 7×8 piksel to'ri — rasterizator natijasini ko'rsatish uchun
 const GLYPH = [
@@ -187,16 +187,18 @@ export function buildScreen(meta) {
   eye.add(pupil);
   caption('ko\'z', 12.4, -5.1, '#cbd5e1', 22);
 
-  const finale = textPlane(
-    [[{ text: 'Console.WriteLine("Salom")', color: '#fde68a', weight: '600' },
-      { text: '  dan boshlangan yo\'l elektronning energiya sathidan sakrashi bilan tugadi.', color: '#cbd5e1' }]],
-    { size: 25, height: 0.85, align: 'center' }
-  );
+  const finaleRows = (lang) => [[
+    { text: lang.call, color: '#fde68a', weight: '600' },
+    { text: '  dan boshlangan yo\'l elektronning energiya sathidan sakrashi bilan tugadi.', color: '#cbd5e1' }
+  ]];
+  const FINALE_OPTS = { size: 25, height: 0.85, align: 'center' };
+  const finale = textPlane(finaleRows(meta.lang), FINALE_OPTS);
   finale.position.set(0, -8.8, 0);
   g.add(finale);
 
   return {
     group: g,
+    setLang(lang) { retext(finale, finaleRows(lang), FINALE_OPTS); },
     update(t) {
       // Rasterizatsiya to'lqini harflar bo'ylab yuguradi
       cells.forEach(({ m, base, r }) => {

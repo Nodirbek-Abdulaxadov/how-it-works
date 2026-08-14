@@ -2,8 +2,8 @@
 import * as THREE from 'three';
 import {
   textPlane, label, segments, curveLine, wireBox, panel,
-  orb, glowSprite, lineMat, pulse, clamp, lerp
-} from '../lib/gfx.js';
+  orb, glowSprite, lineMat, retext, pulse, clamp, lerp
+} from '../../lib/gfx.js';
 
 // ── 06. Yadro: syscall va imtiyoz chegarasi ─────────────────────────────────
 export function buildKernel(meta) {
@@ -45,9 +45,12 @@ export function buildKernel(meta) {
   ], -1.4);
 
   // ---- Chaqiruvlar zanjiri: C# dan tty drayverigacha ----
+  const stepRows = (lang) => [
+    [lang.call, 'sizning kodingiz', 8.7, '#a5f3fc'],
+    [lang.runtime, lang.runtimeName, 6.8, '#7dd3fc']
+  ];
   const steps = [
-    ['Console.WriteLine("Salom")', 'sizning kodingiz', 8.7, '#a5f3fc'],
-    ['Stream.Write(bytes)', '.NET runtime', 6.8, '#7dd3fc'],
+    ...stepRows(meta.lang),
     ['write(1, buf, 6)', 'syscall o\'ramasi', 4.9, '#93c5fd'],
     ['mov eax, 1 ; syscall', 'protsessor komandasi', 3.0, '#fbbf24'],
     ['MSR_LSTAR → entry_SYSCALL_64', 'yadro kirish nuqtasi', -1.3, '#fda4af'],
@@ -171,6 +174,14 @@ export function buildKernel(meta) {
 
   return {
     group: g,
+    setLang(lang) {
+      stepRows(lang).forEach(([code, desc, , col], i) => {
+        retext(cards[i], [
+          [{ text: code, color: col, weight: '600' }],
+          [{ text: desc, color: '#64748b' }]
+        ], { size: 25, height: 1.45, bg: 'rgba(9,14,28,0.9)', border: 'rgba(148,163,184,0.18)', padX: 20, padY: 12 });
+      });
+    },
     update(t) {
       const cycle = (t * 0.22) % 1;              // to'liq syscall aylanishi
       const down = clamp(cycle / 0.55, 0, 1);     // pastga — so'rov

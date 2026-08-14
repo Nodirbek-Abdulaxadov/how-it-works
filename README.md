@@ -1,38 +1,53 @@
 # how it works
 
-**C# kod kompyuterda qanday ishlaydi — koddan kvant fizikasigacha.**
+**Kod kompyuterda qanday ishlaydi — koddan kvant fizikasigacha.**
 
-Interaktiv 3D vizualizatsiya. `Console.WriteLine("Salom")` chaqiruvi qanday qilib
-kremniydagi elektronlar harakatiga aylanishini 16 qatlamda ko'rsatadi. Har bir
-qatlamda bitta abstraksiya yechiladi — kvant darajasigacha, so'ng natija
-yorug'lik bo'lib qaytadi.
+Interaktiv 3D vizualizatsiya. Bitta chiqarish chaqiruvi qanday qilib kremniydagi
+elektronlar harakatiga aylanishini ko'rsatadi: har bir qatlamda bitta abstraksiya
+yechiladi, kvant darajasigacha tushiladi, so'ng natija yorug'lik bo'lib qaytadi.
+
+Beshta til: **C# · Python · Rust · Go · JavaScript.**
 
 three.js (faqat asosiy modul, qo'shimchalarsiz), qurish bosqichisiz oddiy ES modullar.
 
-## Qatlamlar
+## Tuzilish: bosh va umurtqa
 
-| # | Qatlam | Masshtab |
-|---|--------|----------|
-| 01 | C# manba kodi — matn va UTF-8 baytlar | ~10⁻² m |
-| 02 | Roslyn: leksik tahlil va sintaksis daraxti | kompilyatsiya vaqti |
-| 03 | IL (CIL), metadata va PE assembly | Program.dll |
-| 04 | CLR, RyuJIT, tiered compilation, GC | ish vaqti |
-| 05 | x86-64 mashina kodi: opcode, ModR/M, registrlar | RAM dagi baytlar |
-| 06 | Chaqiruvlar steki: kadr, qaytish manzili, overflow | stek sohasi |
-| 07 | Yadro: syscall, ring 3 → ring 0, sys_write | imtiyoz chegarasi |
-| 08 | Jarayon, virtual xotira, MMU va scheduler | operatsion tizim |
-| 09 | CPU konveyeri, out-of-order, kesh ierarxiyasi | ~10⁻³ m |
-| 10 | Mantiqiy elementlar, summator, flip-flop, soat | ~10⁻⁵ m |
-| 11 | Gate ichi: XOR → 4 NAND → 16 tranzistor | ~10⁻⁶ m |
-| 12 | CMOS tranzistor: MOSFET va invertor | ~10⁻⁸ m |
-| 13 | Xotira yacheykasi: SRAM · DRAM · NAND flash | ~10⁻⁸ m |
-| 14 | Kremniy kristalli, doping, PN o'tish | ~10⁻¹⁰ m |
-| 15 | Zona nazariyasi, \|ψ\|² va kvant tunnellashuvi | kvant darajasi |
-| 16 | Ekran: rasterizatsiya → subpiksel → foton | yorug'lik |
+Zanjirning pastki qismi tilga bog'liq emas — 05-qatlamdan pastda "til" degan
+tushuncha allaqachon yo'qolgan. Shuning uchun loyiha ikkiga bo'lingan:
 
-Zanjir pastga tushib kvant darajasida tugamaydi: oxirgi qatlam natijani
-yuqoriga qaytaradi va yana kvantga keladi — ko'zingizga yetib kelayotgan
-foton o'sha zona nazariyasining o'zi.
+**Umurtqa** — 12 qatlam, hamma til uchun bir xil, bir marta quriladi:
+
+| Qatlam | Masshtab |
+|--------|----------|
+| Mashina kodi: opcode, ModR/M, registrlar | RAM dagi baytlar |
+| Chaqiruvlar steki: kadr, qaytish manzili, overflow | stek sohasi |
+| Yadro: syscall, ring 3 → ring 0, sys_write | imtiyoz chegarasi |
+| Jarayon, virtual xotira, MMU va scheduler | operatsion tizim |
+| CPU konveyeri, out-of-order, kesh ierarxiyasi | ~10⁻³ m |
+| Mantiqiy elementlar, summator, flip-flop, soat | ~10⁻⁵ m |
+| Gate ichi: XOR → 4 NAND → 16 tranzistor | ~10⁻⁶ m |
+| CMOS tranzistor: MOSFET va invertor | ~10⁻⁸ m |
+| Xotira yacheykasi: SRAM · DRAM · NAND flash | ~10⁻⁸ m |
+| Kremniy kristalli, doping, PN o'tish | ~10⁻¹⁰ m |
+| Zona nazariyasi, \|ψ\|² va kvant tunnellashuvi | kvant darajasi |
+| Ekran: rasterizatsiya → subpiksel → foton | yorug'lik |
+
+**Bosh** — har bir tilda o'zicha, chunki yuqori zanjirning *shakli* har xil:
+
+| Til | Bosh qatlamlar |
+|-----|----------------|
+| **C#** (4) | manba kod → Roslyn va AST → IL va metadata → CLR, JIT, GC |
+| **Python** (3) | manba kod → AST va bayt-kod → **interpretator halqasi** |
+| **Rust** (3) | manba kod va makroslar → **MIR va borrow checker** → LLVM va AOT |
+| **Go** (3) | manba kod → SSA va statik binar → **scheduler va GC** |
+| **JavaScript** (3) | manba kod → Ignition, shakllar, IC → **TurboFan va deopt** |
+
+Eng qiziq farqlar aynan shu boshlarda: Python ning bayt-kodi hech qachon mashina
+kodiga aylanmaydi (u CPython ni *boshqaradi*), Rust ning borrow checker qatlami
+esa bitta ham mashina komandasi chiqarmaydi va izsiz yo'qoladi.
+
+Qatlam raqamlari hisoblab chiqariladi, shuning uchun boshlarning uzunligi har xil
+bo'lishi mumkin.
 
 ## Ishga tushirish
 
@@ -44,10 +59,11 @@ npx http-server -p 8080 .
 python3 -m http.server 8080
 ```
 
-Keyin `http://localhost:8080` ni oching.
+Keyin `http://localhost:8080` ni oching. Til `#python` kabi hash orqali ham
+tanlanadi.
 
 **Boshqaruv:** scroll · `↑` `↓` `PageUp` `PageDown` `Home` `End` · o'ngdagi
-paneldan qatlam tanlash · telefonda surish (swipe).
+paneldan qatlam, chapdagi tugmalardan til tanlash · telefonda surish (swipe).
 
 ## GitHub Pages
 
@@ -78,35 +94,46 @@ Ikkita rejim bor:
 - **odatdagi** — fragment (`<title>`, `<style>`, kontent, `<script>`); uni o'z
   qobig'iga o'raydigan muhitlar uchun;
 - **`--full`** — to'liq HTML hujjat. Bu faylni shunchaki brauzerda ochsangiz
-  bo'ldi: server ham, internet ham, `npm install` ham kerak emas. Elektron
-  pochtaga ilova qilib yuborsa ham ishlaydi.
+  bo'ldi: server ham, internet ham, `npm install` ham kerak emas.
 
-## Tuzilma
+Skript modullarni bog'liqlik tartibida ulaydi va hammasini bitta blokka
+o'raydi — minifikatsiya qilingan three.js dagi bir harfli global nomlar bilan
+to'qnashmasligi uchun. Shu sabab modullar **nomlangan** import/export ishlatadi:
+`import * as ns` va `export default` bir faylga jamlanmaydi.
+
+## Fayllar
 
 ```
 index.html            sahna, UI qatlamlari, importmap
-styles.css            interfeys (panel, navigatsiya, kirish ekrani)
+styles.css            interfeys (panel, navigatsiya, til tanlagich)
 src/
-  main.js             kamera sayohati, scroll boshqaruvi, moslashuvchan joylashuv
-  content.js          har bir qatlam matni va rang sxemasi
+  main.js             kamera sayohati, til almashtirish, moslashuvchan joylashuv
+  languages.js        tillar reyestri: bosh + umurtqa yig'iladi
   lib/gfx.js          matn teksturalari, chiziqlar, zarrachalar, yordamchilar
+  content/
+    spine.js          umumiy 12 qatlamning matni va kadr sozlamalari
+    heads/*.js        har bir til uchun matn (csharp, python, rust, go, javascript)
   levels/
-    software.js       01–06: manba kod → AST → IL → JIT → mashina kodi → stek
-    system.js         07–10: yadro/syscall → virtual xotira → CPU → mantiq
-    hardware.js       11–15: gate ichi → tranzistor → xotira → kremniy → kvant
-    output.js         16: rasterizatsiya → subpiksel → foton
+    heads/common.js   kod paneli, karta ustuni, oqim o'qi
+    heads/*.js        tilga xos 3D sahnalar
+    spine/machine.js  mashina kodi va chaqiruvlar steki
+    spine/system.js   yadro, virtual xotira, CPU, mantiq
+    spine/hardware.js gate ichi, tranzistor, xotira, kremniy, kvant
+    spine/output.js   ekran: rasterizatsiya → foton
 vendor/               three.js (r169, modul build)
 tools/                bitta faylga jamlovchi skript
 ```
 
 Har bir qatlam `build(meta)` funksiyasi bo'lib, `{ group, update(t, dt) }`
-qaytaradi. `main.js` faqat joriy qatlam va uning qo'shnilarini yangilaydi.
+qaytaradi. Umurtqadagi uchta qatlam qo'shimcha `setLang(lang)` beradi — til
+almashganda faqat bir nechta yorliq matni yangilanadi, sahna qayta qurilmaydi.
+`main.js` faqat joriy qatlam va uning qo'shnilarini yangilaydi.
 
 ### Joylashuv qanday hisoblanadi
 
-`src/main.js` dagi `VIEW` massivida har bir qatlam uchun kamera masofasi (`z`),
-vertikal markaz (`y`) va kontentning yarim kengligi (`w`) turadi. `resize()`
-shular asosida ikki narsani hisoblaydi:
+Har bir qatlam o'z `view` sozlamasini olib yuradi: kamera masofasi (`z`),
+vertikal markaz (`y`) va kontentning yarim kengligi (`w`). `resize()` shular
+asosida ikki narsani hisoblaydi:
 
 - **surilish** — kontent chapdagi matn paneli bilan kesishmasligi uchun;
 - **masshtab** — qatlam kadr kengligiga sig'ishi uchun (tor ekranlarda kichrayadi).
@@ -114,16 +141,18 @@ shular asosida ikki narsani hisoblaydi:
 Portret rejimda matn paneli yig'iladi ("Batafsil" tugmasi) va kadr yuqoriga
 suriladi, shunda 3D sahnaga joy qoladi.
 
-Sozlash paytida brauzer konsolida `__debug()` chaqirilsa, joriy kamera holati,
-masshtab va surilish qiymatlari ko'rinadi. `__debug([[x, y, qatlam]])` esa
-world nuqtasini ekran pikseliga o'giradi.
+Sozlash paytida brauzer konsolida `__debug()` chaqirilsa, joriy til, kamera
+holati va masshtab qiymatlari ko'rinadi. `__debug([[x, y, qatlam]])` esa world
+nuqtasini ekran pikseliga o'giradi.
 
 ## Aniqlik haqida
 
 Vizualizatsiya soddalashtirilgan, lekin raqamlar va mexanizmlar haqiqiy:
-IL komandalar ketma-ketligi `ldc.i4.s / add / stloc.0 / ldstr / box / call`,
-`mov rcx, rax` ning kodlanishi `48 89 C8`, Linux x86-64 da `write` ning
-syscall raqami 1 va kirish nuqtasi `MSR_LSTAR`, NAND = 4 tranzistor va
-XOR = 4 NAND, DRAM refresh oralig'i ~64 ms, kremniyning taqiqlangan
-zonasi 1.12 eV. Konveyer 5 bosqich sifatida ko'rsatilgan — bu klassik RISC modeli;
-haqiqiy x86 yadrolarida 15–20 bosqich bor va bu matnda aytib o'tilgan.
+IL ketma-ketligi `ldc.i4.s / add / stloc.0 / ldstr / box / call`,
+`mov rcx, rax` ning kodlanishi `48 89 C8`, Linux x86-64 da `write` ning syscall
+raqami 1 va kirish nuqtasi `MSR_LSTAR`, CPython bayt-kodi 2 baytli (opcode +
+oparg), NAND = 4 tranzistor va XOR = 4 NAND, DRAM refresh oralig'i ~64 ms,
+kremniyning taqiqlangan zonasi 1.12 eV.
+
+Konveyer 5 bosqich sifatida ko'rsatilgan — bu klassik RISC modeli; haqiqiy x86
+yadrolarida 15–20 bosqich bor va bu matnda aytib o'tilgan.

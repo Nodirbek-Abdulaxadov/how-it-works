@@ -131,6 +131,22 @@ export function textPlane(lines, opts = {}) {
   return mesh;
 }
 
+/**
+ * Mavjud matn tekisligining matnini almashtiradi (til o'zgarganda kerak).
+ * Matn uzunligi bilan birga kenglik ham qayta hisoblanadi.
+ */
+export function retext(mesh, lines, opts = {}) {
+  const tex = textTexture(lines, opts);
+  const height = opts.height ?? mesh.userData.size[1];
+  const width = height * tex.userData.aspect;
+  mesh.material.map = tex;
+  mesh.material.needsUpdate = true;
+  mesh.geometry.dispose();
+  mesh.geometry = new THREE.PlaneGeometry(width, height);
+  mesh.userData.size = [width, height];
+  return mesh;
+}
+
 /** Kameraga qaragan yorliq. */
 export function label(text, opts = {}) {
   const tex = textTexture(text, { font: SANS, size: 30, ...opts });

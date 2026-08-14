@@ -113,6 +113,21 @@ i{color:#cbd5e1}
 .rail-item.on{color:var(--accent)}
 .rail-item.on .rd{width:40px;opacity:1}
 
+/* ── Til tanlagich ─────────────────────────────────────────────── */
+.lang-row{display:flex;flex-wrap:wrap;gap:6px}
+#langs{position:fixed;left:30px;top:50px;z-index:20;pointer-events:auto}
+#hero-langs{justify-content:center;margin:0 0 28px}
+.lang-btn{
+  font:inherit;font-family:var(--mono);font-size:11px;letter-spacing:.06em;
+  color:var(--dim);background:rgba(148,163,184,.06);
+  border:1px solid rgba(148,163,184,.18);border-radius:999px;
+  padding:5px 12px;cursor:pointer;
+  transition:color .2s ease,border-color .2s ease,background .2s ease;
+}
+.lang-btn:hover{color:#cbd5e1;border-color:rgba(148,163,184,.4)}
+.lang-btn.on{color:var(--accent);border-color:currentColor;background:rgba(110,231,255,.1)}
+#hero-langs .lang-btn{font-size:12px;padding:7px 15px}
+
 /* ── Masshtab va progress ──────────────────────────────────────── */
 #scale{
   position:fixed;left:30px;top:26px;z-index:20;
@@ -145,11 +160,13 @@ i{color:#cbd5e1}
   .rail-item .rl{display:none}
   .rail-item .rd{width:14px}
   .rail-item.on .rd{width:24px}
-  #scale{left:20px;top:18px;font-size:10px;max-width:60vw}
+  #scale{left:20px;top:18px;font-size:10px;max-width:56vw}
+  #langs{left:20px;top:38px;gap:4px}
+  .lang-btn{font-size:10px;padding:4px 9px}
   #nav-hint{display:none}
 }
 /* Klaviatura fokusi ko'rinib tursin */
-#start:focus-visible,#more:focus-visible,.rail-item:focus-visible{
+#start:focus-visible,#more:focus-visible,.rail-item:focus-visible,.lang-btn:focus-visible{
   outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
 .rail-item:focus-visible{color:var(--accent)}
 

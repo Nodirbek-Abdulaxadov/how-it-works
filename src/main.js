@@ -1,42 +1,16 @@
-// Sahna, kamera sayohati va UI boshqaruvi.
+// Sahna, kamera sayohati, til almashtirish va UI boshqaruvi.
+//
+// Tuzilish: umumiy "umurtqa" (mashina kodidan fotongacha) bir marta quriladi va
+// hamma tillar uchun qayta ishlatiladi; har bir tilning "boshi" esa birinchi
+// tanlanganda quriladi va keshda qoladi.
+
 import * as THREE from 'three';
-import { LEVELS } from './content.js';
-import { buildSource, buildAst, buildIl, buildJit, buildMachine, buildStack } from './levels/software.js';
-import { buildKernel, buildOs, buildCpu, buildLogic } from './levels/system.js';
-import { buildGates, buildTransistor, buildMemory, buildSilicon, buildQuantum } from './levels/hardware.js';
-import { buildScreen } from './levels/output.js';
+import { SPINE } from './content/spine.js';
+import { LANGUAGES, byId, levelsFor } from './languages.js';
 import { points, segments, clamp, lerp, damp, smooth } from './lib/gfx.js';
 
-const BUILDERS = [
-  buildSource, buildAst, buildIl, buildJit, buildMachine, buildStack,
-  buildKernel, buildOs, buildCpu, buildLogic,
-  buildGates, buildTransistor, buildMemory, buildSilicon, buildQuantum,
-  buildScreen
-];
-
-// Har bir qatlam uchun: kamera masofasi (z), vertikal markaz (y), kontent yarim kengligi (w).
-// w tor ekranlarda qatlamni kadrga sig'dirish uchun ishlatiladi.
-const VIEW = [
-  { z: 27, y: 0.5, w: 11.5 },  // 01 manba kod
-  { z: 31, y: 2.4, w: 10 },    // 02 AST
-  { z: 32, y: 0.6, w: 13.5 },  // 03 IL
-  { z: 33, y: -1.4, w: 15 },   // 04 JIT
-  { z: 31, y: 0.4, w: 14.5 },  // 05 mashina kodi
-  { z: 34, y: -1.9, w: 13.5 }, // 06 chaqiruvlar steki
-  { z: 33, y: -1.1, w: 14.2 }, // 07 yadro / syscall
-  { z: 37, y: -1.6, w: 15 },   // 08 virtual xotira
-  { z: 35, y: -1.8, w: 16.5 }, // 09 CPU
-  { z: 33, y: -1.4, w: 14.5 }, // 10 mantiq
-  { z: 35, y: -1, w: 15.5 },   // 11 gate ichida
-  { z: 35, y: -1.8, w: 15.5 }, // 12 tranzistor
-  { z: 35, y: 0.4, w: 17 },    // 13 xotira yacheykasi
-  { z: 35, y: -3.2, w: 14.5 }, // 14 kremniy
-  { z: 35, y: -5, w: 16 },     // 15 kvant
-  { z: 34, y: -1.4, w: 14.5 }  // 16 ekran / foton
-];
-
 const GAP = 72;
-const N = LEVELS.length;
+const RAIL_PX = 56;
 
 // ── Sahna ───────────────────────────────────────────────────────────────────
 const canvas = document.getElementById('scene');
@@ -50,11 +24,13 @@ scene.fog = new THREE.Fog(0x05070f, 44, 96);
 const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 600);
 scene.add(camera);
 
+const MAX_LEVELS = Math.max(...LANGUAGES.map((l) => l.levels.length)) + SPINE.length;
+
 // ── Fon: yulduzlar va vertikal "shaxta" chiziqlari ──────────────────────────
 {
   const SN = 1600;
   const pos = new Float32Array(SN * 3);
-  const bottom = -(N - 1) * GAP - 60;
+  const bottom = -(MAX_LEVELS - 1) * GAP - 60;
   for (let i = 0; i < SN; i++) {
     pos[i * 3] = (Math.random() - 0.5) * 260;
     pos[i * 3 + 1] = lerp(60, bottom, Math.random());
@@ -64,30 +40,81 @@ scene.add(camera);
   stars.material.fog = false;
   scene.add(stars);
 
-  const spine = [];
-  for (let i = 0; i < N; i++) {
+  const spineLines = [];
+  for (let i = 0; i < MAX_LEVELS; i++) {
     const y = -i * GAP;
     [-26, 26].forEach((x) => {
-      spine.push(new THREE.Vector3(x, y + 22, -14), new THREE.Vector3(x, y - 22, -14));
+      spineLines.push(new THREE.Vector3(x, y + 22, -14), new THREE.Vector3(x, y - 22, -14));
     });
-    // qatlamlar orasidagi belgi
-    spine.push(new THREE.Vector3(-3, y - 34, -14), new THREE.Vector3(3, y - 34, -14));
+    spineLines.push(new THREE.Vector3(-3, y - 34, -14), new THREE.Vector3(3, y - 34, -14));
   }
-  scene.add(segments(spine, 0x1e2b45, 0.55));
+  scene.add(segments(spineLines, 0x1e2b45, 0.55));
 }
 
 // ── Qatlamlarni qurish ──────────────────────────────────────────────────────
-const levels = LEVELS.map((meta, i) => {
-  const built = BUILDERS[i]({ ...meta, color: new THREE.Color(meta.color), color2: new THREE.Color(meta.color2) });
-  built.group.position.y = -i * GAP;
-  built.group.visible = false;
-  scene.add(built.group);
-  return built;
+const toMeta = (level) => ({
+  ...level,
+  color: new THREE.Color(level.color),
+  color2: new THREE.Color(level.color2)
 });
 
+function buildAll(levels) {
+  return levels.map((level) => {
+    const built = level.build(toMeta(level));
+    built.group.visible = false;
+    scene.add(built.group);
+    return built;
+  });
+}
+
+// Umurtqa bir marta quriladi. Tilga bog'liq bir nechta yorliq keyin
+// setLang() orqali almashtiriladi.
+const first = LANGUAGES[0];
+const spineLevels = levelsFor(first).slice(first.levels.length);
+const spineBuilt = buildAll(spineLevels);
+
+// Bosh qismlar — talab bo'yicha
+const headCache = new Map();
+function headFor(lang) {
+  if (!headCache.has(lang.id)) {
+    headCache.set(lang.id, buildAll(levelsFor(lang).slice(0, lang.levels.length)));
+  }
+  return headCache.get(lang.id);
+}
+
+let current = null;   // joriy til
+let LEVELS = [];      // joriy qatlamlar ro'yxati (matn + view)
+let built = [];       // mos quruvchilar natijasi
+let N = 0;
+
+function applyLanguage(lang) {
+  // Eski boshni yashiramiz
+  if (current) headFor(current).forEach((b) => (b.group.visible = false));
+
+  current = lang;
+  const all = levelsFor(lang);
+  LEVELS = all;
+  N = all.length;
+
+  const head = headFor(lang);
+  built = [...head, ...spineBuilt];
+  built.forEach((b, i) => { b.group.position.y = -i * GAP; });
+  spineBuilt.forEach((b) => b.setLang?.(lang.lang));
+
+  fitScale.length = xShiftOf.length = 0;
+  for (let i = 0; i < N; i++) { fitScale.push(1); xShiftOf.push(0); }
+
+  buildRail();
+  resize();
+  uiIndex = -1;
+  target = clamp(target, 0, N - 1);
+  pos = clamp(pos, 0, N - 1);
+  document.documentElement.style.setProperty('--accent', '#' + lang.levels[0].color.toString(16).padStart(6, '0'));
+}
+
 // ── Aylanish (scroll) boshqaruvi ────────────────────────────────────────────
-let target = 0;   // qaysi qatlamga ketyapmiz
-let pos = 0;      // hozirgi uzluksiz holat
+let target = 0;
+let pos = 0;
 let uiIndex = -1;
 let locked = 0;
 
@@ -138,6 +165,7 @@ const el = {
   facts: document.getElementById('facts'),
   more: document.getElementById('more'),
   rail: document.getElementById('rail'),
+  langs: document.getElementById('langs'),
   scale: document.getElementById('scale'),
   bar: document.getElementById('progress-bar'),
   hint: document.getElementById('nav-hint')
@@ -150,17 +178,55 @@ function hideHero() {
   el.hero.classList.add('hidden');
 }
 el.start.addEventListener('click', () => { hideHero(); jump(1); });
-el.hero.addEventListener('click', hideHero);
+el.hero.addEventListener('click', (e) => { if (!e.target.closest('#hero-langs')) hideHero(); });
 
-const railItems = LEVELS.map((meta, i) => {
-  const b = document.createElement('button');
-  b.className = 'rail-item';
-  b.innerHTML = `<span class="rl">${meta.title}</span><span class="rd"></span>`;
-  b.title = meta.title;
-  b.addEventListener('click', () => jump(i));
-  el.rail.appendChild(b);
-  return b;
-});
+// Til tanlagich (yuqorida va kirish ekranida)
+function buildLangPickers() {
+  [el.langs, document.getElementById('hero-langs')].forEach((host) => {
+    if (!host) return;
+    host.innerHTML = '';
+    LANGUAGES.forEach((lang) => {
+      const b = document.createElement('button');
+      b.className = 'lang-btn';
+      b.textContent = lang.name;
+      b.dataset.lang = lang.id;
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectLanguage(lang.id);
+        if (host.id === 'hero-langs') { hideHero(); jump(1); }
+      });
+      host.appendChild(b);
+    });
+  });
+}
+
+function markLangButtons() {
+  document.querySelectorAll('.lang-btn').forEach((b) => {
+    b.classList.toggle('on', b.dataset.lang === current.id);
+  });
+}
+
+function selectLanguage(id) {
+  const lang = byId(id);
+  if (current && lang.id === current.id) return;
+  applyLanguage(lang);
+  markLangButtons();
+  history.replaceState(null, '', '#' + lang.id);
+}
+
+let railItems = [];
+function buildRail() {
+  el.rail.innerHTML = '';
+  railItems = LEVELS.map((level, i) => {
+    const b = document.createElement('button');
+    b.className = 'rail-item';
+    b.innerHTML = `<span class="rl">${level.title}</span><span class="rd"></span>`;
+    b.title = `${level.number} — ${level.title}`;
+    b.addEventListener('click', () => jump(i));
+    el.rail.appendChild(b);
+    return b;
+  });
+}
 
 el.more.addEventListener('click', () => {
   const open = el.info.classList.toggle('open');
@@ -171,18 +237,18 @@ el.more.addEventListener('click', () => {
 let swapTimer = null;
 let flashTimer = null;
 function setUi(i) {
-  const meta = LEVELS[i];
+  const level = LEVELS[i];
   el.info.classList.add('swap');
   clearTimeout(swapTimer);
   swapTimer = setTimeout(() => {
-    el.kicker.textContent = meta.kicker;
-    el.title.textContent = meta.title;
-    el.lead.textContent = meta.lead;
-    el.body.innerHTML = meta.body.map((p) => `<p>${p}</p>`).join('');
-    el.facts.innerHTML = meta.facts
+    el.kicker.textContent = `${level.number} — ${level.kicker}`;
+    el.title.textContent = level.title;
+    el.lead.textContent = level.lead;
+    el.body.innerHTML = level.body.map((p) => `<p>${p}</p>`).join('');
+    el.facts.innerHTML = level.facts
       .map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`)
       .join('');
-    el.scale.textContent = meta.scale;
+    el.scale.textContent = level.scale;
     el.info.classList.remove('swap');
   }, 220);
 
@@ -195,9 +261,6 @@ function setUi(i) {
 }
 
 // ── Sichqoncha parallaksi ───────────────────────────────────────────────────
-// Harakatni kamaytirish so'ralgan bo'lsa, parallaks o'chadi va qatlamlar orasida
-// sho'ng'ish o'rniga tez o'tiladi. Qatlamlarning o'z animatsiyasi qoladi —
-// aynan u tushuntirmoqchi bo'lgan narsani ko'rsatadi.
 const calm = matchMedia('(prefers-reduced-motion: reduce)');
 const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
 addEventListener('pointermove', (e) => {
@@ -206,20 +269,16 @@ addEventListener('pointermove', (e) => {
   mouse.ty = (e.clientY / innerHeight - 0.5) * 2;
 });
 
-// ── O'lcham ─────────────────────────────────────────────────────────────────
-// Kontent chapdagi matn paneli va o'ngdagi navigatsiya orasidagi bo'sh joyga joylashadi.
-// Har bir qatlam uchun surilish (world birligida) va masshtab alohida hisoblanadi.
-const RAIL_PX = 56;
+// ── O'lcham: kontent panel va navigatsiya orasidagi joyga joylashadi ────────
 let portrait = false;
-const fitScale = new Array(N).fill(1);
-const xShiftOf = new Array(N).fill(0);
+const fitScale = [];
+const xShiftOf = [];
 
 function resize() {
   const w = innerWidth, h = innerHeight;
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   portrait = w <= 820;
-  // Tor ekranlarda kameraning ko'rish burchagi kengayadi
   camera.fov = clamp(46 + (1.5 - camera.aspect) * 15, 46, 66);
   camera.updateProjectionMatrix();
 
@@ -228,15 +287,14 @@ function resize() {
   const tanHalf = Math.tan((camera.fov / 2) * Math.PI / 180);
 
   for (let i = 0; i < N; i++) {
-    // Kameradan VIEW[i].z masofada bitta piksel necha world birligini qoplaydi
-    const worldPerPx = (2 * tanHalf * VIEW[i].z * camera.aspect) / w;
+    const view = LEVELS[i].view;
+    const worldPerPx = (2 * tanHalf * view.z * camera.aspect) / w;
     xShiftOf[i] = portrait ? 0 : (panelPx / 2 - RAIL_PX / 2) * worldPerPx;
-    fitScale[i] = clamp((usablePx / 2) * worldPerPx / VIEW[i].w, 0.38, 1);
-    levels[i].group.scale.setScalar(fitScale[i]);
+    fitScale[i] = clamp((usablePx / 2) * worldPerPx / view.w, 0.38, 1);
+    built[i].group.scale.setScalar(fitScale[i]);
   }
 }
 addEventListener('resize', resize);
-resize();
 
 // ── Animatsiya sikli ────────────────────────────────────────────────────────
 const bg = new THREE.Color();
@@ -256,11 +314,9 @@ function frame() {
   const i1 = Math.min(i0 + 1, N - 1);
   const f = smooth(clamp(pos - i0, 0, 1));
 
-  // Kamera: qatlamlar orasida "orqaga tortilib, keyin sho'ng'iydi"
-  const camZ = lerp(VIEW[i0].z, VIEW[i1].z, f) + (calm.matches ? 0 : Math.sin(f * Math.PI) * 15);
-  const camY = -pos * GAP + lerp(VIEW[i0].y * fitScale[i0], VIEW[i1].y * fitScale[i1], f);
-
-  // Portret rejimda pastdagi matn paneli kontentni yopmasligi uchun kadrni yuqoriga suramiz
+  const camZ = lerp(LEVELS[i0].view.z, LEVELS[i1].view.z, f)
+    + (calm.matches ? 0 : Math.sin(f * Math.PI) * 15);
+  const camY = -pos * GAP + lerp(LEVELS[i0].view.y * fitScale[i0], LEVELS[i1].view.y * fitScale[i1], f);
   const yBias = portrait ? -Math.tan((camera.fov / 2) * Math.PI / 180) * camZ * 0.34 : 0;
   const shift = lerp(xShiftOf[i0], xShiftOf[i1], f);
 
@@ -271,18 +327,16 @@ function frame() {
   lookAt.set(-shift + mouse.x * 0.9, camY + yBias + mouse.y * 0.5, 0);
   camera.lookAt(lookAt);
 
-  // Fon rangi qatlamdan qatlamga o'zgaradi
   cA.setHex(LEVELS[i0].color);
   cB.setHex(LEVELS[i1].color);
   bg.copy(cA).lerp(cB, f).multiplyScalar(0.14).lerp(INK, 0.82);
   renderer.setClearColor(bg, 1);
   scene.fog.color.copy(bg);
 
-  // Faqat yaqin qatlamlarni yangilaymiz
   for (let i = 0; i < N; i++) {
     const near = Math.abs(i - pos) < 1.35;
-    levels[i].group.visible = near;
-    if (near) levels[i].update(t, dt);
+    built[i].group.visible = near;
+    if (near) built[i].update(t, dt);
   }
 
   const idx = Math.round(pos);
@@ -292,23 +346,26 @@ function frame() {
   requestAnimationFrame(frame);
 }
 
+// ── Ishga tushirish ─────────────────────────────────────────────────────────
+buildLangPickers();
+applyLanguage(byId(location.hash.slice(1)));
+markLangButtons();
 setUi(0);
 uiIndex = 0;
 frame();
 
-// Salomlashuv: konsolda ham bir og'iz
-console.log('%chow-it-works', 'color:#6ee7ff;font:600 14px monospace', '— C# dan kvant fizikasigacha, 16 qatlam.');
+console.log('%chow-it-works',
+  'color:#6ee7ff;font:600 14px monospace',
+  `— ${LANGUAGES.map((l) => l.name).join(' · ')}, koddan kvant fizikasigacha.`);
 
-// Sozlash/tekshirish uchun: joriy kamera holati va qatlam masshtabi
+// Sozlash uchun: joriy kamera holati va qatlam masshtabi
 globalThis.__debug = (probe = []) => ({
-  pos, target, fov: camera.fov,
+  lang: current.id, pos, target, fov: camera.fov, levels: N,
   cam: camera.position.toArray().map((v) => +v.toFixed(2)),
   fit: fitScale.map((s) => +s.toFixed(3)),
-  shift: xShiftOf.map((s) => +s.toFixed(2)),
-  // [x, yLocal, levelIndex] nuqtalarini ekran pikseliga o'giradi
   screen: probe.map(([x, y, i]) => {
     const v = new THREE.Vector3(x, y, 0);
-    levels[i].group.localToWorld(v);
+    built[i].group.localToWorld(v);
     v.project(camera);
     return [Math.round((v.x * 0.5 + 0.5) * innerWidth), Math.round((-v.y * 0.5 + 0.5) * innerHeight)];
   })
