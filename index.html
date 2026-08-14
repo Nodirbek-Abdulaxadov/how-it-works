@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>C# kod kompyuterda qanday ishlaydi — koddan kvant fizikasigacha</title>
+<meta name="description" content="C# kodidan tortib kvant fizikasigacha — 11 qatlamli interaktiv 3D vizualizatsiya.">
+<link rel="stylesheet" href="./styles.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+
+<!-- Kirish ekrani -->
+<div id="hero">
+  <div class="hero-inner">
+    <div class="hero-kicker">interaktiv vizualizatsiya · 11 qatlam</div>
+    <h1>C# kod kompyuterda<br>qanday ishlaydi?</h1>
+    <p class="hero-lead">
+      Bitta <code>Console.WriteLine</code> chaqiruvi qanday qilib elektronlar harakatiga aylanadi?
+      Yozgan matningizdan boshlab, kompilyator, protsessor va tranzistorlar orqali
+      kvant fizikasining eng tubigacha tushamiz.
+    </p>
+    <button id="start">Sayohatni boshlash ↓</button>
+    <div class="hero-hint">scroll · ↑ ↓ · yon paneldan tanlang</div>
+  </div>
+</div>
+
+<!-- Chapdagi ma'lumot paneli -->
+<aside id="info" aria-live="polite">
+  <div class="kicker" id="kicker"></div>
+  <h2 id="title"></h2>
+  <p class="lead" id="lead"></p>
+  <button id="more" aria-expanded="false">Batafsil ⌄</button>
+  <div class="body" id="body"></div>
+  <dl class="facts" id="facts"></dl>
+</aside>
+
+<!-- O'ngdagi navigatsiya -->
+<nav id="rail" aria-label="Qatlamlar"></nav>
+
+<!-- Yuqori chap: masshtab -->
+<div id="scale"></div>
+
+<!-- Pastki progress -->
+<div id="progress"><div id="progress-bar"></div></div>
+
+<div id="nav-hint">↓ davom eting</div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
