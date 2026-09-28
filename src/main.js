@@ -97,7 +97,8 @@ function applyLanguage(lang) {
   N = all.length;
 
   const head = headFor(lang);
-  built = [...head, ...spineBuilt];
+  built = lang.standalone ? head : [...head, ...spineBuilt];
+  spineBuilt.forEach((b) => { if (lang.standalone) b.group.visible = false; });
   built.forEach((b, i) => { b.group.position.y = -i * GAP; });
   spineBuilt.forEach((b) => b.setLang?.(lang.lang));
 
@@ -187,7 +188,7 @@ function buildLangPickers() {
     host.innerHTML = '';
     LANGUAGES.forEach((lang) => {
       const b = document.createElement('button');
-      b.className = 'lang-btn';
+      b.className = 'lang-btn' + (lang.kind === 'history' ? ' alt' : '');
       b.textContent = lang.name;
       b.dataset.lang = lang.id;
       b.addEventListener('click', (e) => {

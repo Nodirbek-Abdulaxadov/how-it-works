@@ -9,6 +9,7 @@ import { PYTHON } from './content/heads/python.js';
 import { RUST } from './content/heads/rust.js';
 import { GO } from './content/heads/go.js';
 import { JAVASCRIPT } from './content/heads/javascript.js';
+import { HISTORY } from './content/heads/history.js';
 
 // Nomlangan importlar: bitta faylga jamlanganda ular to'g'ridan-to'g'ri
 // yuqori darajadagi nomlarga aylanadi (namespace import bunday ishlamaydi).
@@ -17,13 +18,17 @@ import { buildPySource, buildPyBytecode, buildPyEval } from './levels/heads/pyth
 import { buildRsSource, buildRsBorrow, buildRsCodegen } from './levels/heads/rust.js';
 import { buildGoSource, buildGoCompile, buildGoRuntime } from './levels/heads/go.js';
 import { buildJsSource, buildJsIgnition, buildJsTurbofan } from './levels/heads/javascript.js';
+import {
+  buildKhwarizmi, buildJacquard, buildLovelace, buildTuring, buildEniac,
+  buildFirstLang, buildBoom, buildC, buildWeb, buildSafety, buildMirror
+} from './levels/heads/history.js';
 
 import { buildMachine, buildStack } from './levels/spine/machine.js';
 import { buildKernel, buildOs, buildCpu, buildLogic } from './levels/spine/system.js';
 import { buildGates, buildTransistor, buildMemory, buildSilicon, buildQuantum } from './levels/spine/hardware.js';
 import { buildScreen } from './levels/spine/output.js';
 
-export const LANGUAGES = [CSHARP, PYTHON, RUST, GO, JAVASCRIPT];
+export const LANGUAGES = [CSHARP, PYTHON, RUST, GO, JAVASCRIPT, HISTORY];
 
 // Qatlam `id` si bo'yicha quruvchi funksiya. Umurtqa hamma til uchun bir xil.
 const BUILDERS = {
@@ -46,14 +51,22 @@ const BUILDERS = {
   'go-source': buildGoSource, 'go-compile': buildGoCompile, 'go-runtime': buildGoRuntime,
 
   // JavaScript
-  'js-source': buildJsSource, 'js-ignition': buildJsIgnition, 'js-turbofan': buildJsTurbofan
+  'js-source': buildJsSource, 'js-ignition': buildJsIgnition, 'js-turbofan': buildJsTurbofan,
+
+  // Tarix (umurtqasiz alohida yo'nalish)
+  'h-khwarizmi': buildKhwarizmi, 'h-jacquard': buildJacquard, 'h-lovelace': buildLovelace,
+  'h-turing': buildTuring, 'h-eniac': buildEniac, 'h-first': buildFirstLang,
+  'h-boom': buildBoom, 'h-c': buildC, 'h-web': buildWeb,
+  'h-safety': buildSafety, 'h-mirror': buildMirror
 };
 
 export const byId = (id) => LANGUAGES.find((l) => l.id === id) || LANGUAGES[0];
 
 /** Tanlangan til uchun to'liq qatlamlar ro'yxati: bosh + umurtqa. */
 export function levelsFor(lang) {
-  return [...lang.levels, ...SPINE].map((level, i) => ({
+  // Tarix yo'nalishi umurtqaga ulanmaydi — u vaqt bo'ylab boradi, pastga emas
+  const all = lang.standalone ? lang.levels : [...lang.levels, ...SPINE];
+  return all.map((level, i) => ({
     ...level,
     lang: lang.lang,                                   // tilga xos yorliqlar
     index: i,
